@@ -20,14 +20,14 @@ and turned off with the directive "!notrace".
 *****************************************************************************/
 
 #define int16 int
-#define int32 long
+#define int32 int
 #define forward extern
 
-#if defined(__GNUC__)
-#  include "linuxenv.h"
-#else
-#  include "c:\csihead\turbcenv.h"
-#endif
+#include <math.h>
+#include <setjmp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 /* The above includes declare strlen(), strcpy(), strcmp(), calloc(),
    fflush(), fopen(), fclose(), fprintf(), sprintf(), fgetc(), labs(),
    floor(), and pow().  Also the type FILE is defined, and the longjump
@@ -174,7 +174,7 @@ void spacerpt(int32 r)
 
 
 /*==========================================================================*/
-void main(void)
+int main(void)
 /*---------------------------------------------------------------------------
  Here is the main read/eval/print loop.
 ----------------------------------------------------------------------------*/
@@ -321,7 +321,7 @@ int32 sread(void)
 
  if ((c= e())<=0) return(c);
 
- if (c EQ 1) if ((k= e()) EQ 4) return(nilptr); else pb= k;
+ if (c EQ 1) { if ((k= e()) EQ 4) return(nilptr); else pb= k; }
  /* to permit recursion, skp is a list of lists. */
  skp= newloc(nilptr,skp);
  A(skp)= j= k= newloc(nilptr,nilptr);
@@ -342,6 +342,7 @@ int32 sread(void)
      skp= B(skp); return(k);
     }
  error("bad syntax");
+ return 0; /* TODO: never reached */
 }
 
 /*===========================================================================*/
@@ -356,7 +357,7 @@ int32 e(void)
        the number table.
 -----------------------------------------------------------------------------*/
 {double v,f,k,sign;
- int32 i,t,c;
+ int32 t,c;
  char nc[50], *np;
  struct Insave *tb;
 
@@ -511,8 +512,9 @@ int32 ordatom (char *s)
  ----------------------------------------------------------------------------*/
 {int32 j,c;
 
-#define hashname(s) (abs((s[0]<<16)+(s[(j=strlen(s))-1]<<8)+j) % n)
+#define hashname(s) (abs((s[0]<<16)+(s[j-1]<<8)+j) % n)
 
+ j= strlen(s);
  j= hashname(s); c= 0;
 
 // DEBUG(printf("ordatom: `%s' hashes to %d. k=%d, n=%d\n",s,j,k,n););
@@ -795,7 +797,7 @@ doit:    t= seval(U2);
          if(Ntab[ptrv(E1)].num<Ntab[ptrv(E2)].num) v= tptr; break;
 
       case 21: /* GREATERP */
-         if (Ntab[ptrv(E1)].num>Ntab[ptrv(E2)].num); v= tptr; break;
+         if (Ntab[ptrv(E1)].num>Ntab[ptrv(E2)].num) v= tptr; break;
 
       case 22: /* EVAL */ v= seval(E1); break;
       case 23: /* EQ */ v= (E1 EQ E2) ? tptr : nilptr; break;
@@ -922,8 +924,6 @@ void gcmark(int32 p)
  Mark the S-expression given by the typed-pointer p.
 --------------------------------------------------------------------------*/
 {static int32 s,t;
-
- static char c[120];
 
 #define marknum(t,p)   if ((t) EQ 9) nmark[ptrv(p)]= 1
 #define listp(t)       ((t) EQ 0 OR (t)>11)
