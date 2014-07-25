@@ -236,79 +236,99 @@ void ourprint(char *s)
 /* This procedure installs all builtin functions and special forms into
    the atom table.  It also initializes the number table and list area. */
 void initlisp(void)
-{int32 i;
+{
+	int32 i;
 
- static char *BI[]=
-    {"CAR","CDR","CONS","LAMBDA","SPECIAL","SETQ","ATOM","NUMBERP","QUOTE",
-     "LIST","DO","COND","PLUS","TIMES","DIFFERENCE","QUOTIENT","POWER",
-     "FLOOR","MINUS","LESSP","GREATERP","EVAL","EQ","AND","OR","SUM","PRODUCT",
-     "PUTPLIST","GETPLIST","READ","PRINT","PRINTCR","MKATOM","BODY","RPLACA",
-     "RPLACD","TSETQ", "NULL", "SET"
-    };
+	static char *BI[] = {
+		"CAR","CDR","CONS","LAMBDA","SPECIAL","SETQ","ATOM","NUMBERP","QUOTE",
+		"LIST","DO","COND","PLUS","TIMES","DIFFERENCE","QUOTIENT","POWER",
+		"FLOOR","MINUS","LESSP","GREATERP","EVAL","EQ","AND","OR","SUM","PRODUCT",
+		"PUTPLIST","GETPLIST","READ","PRINT","PRINTCR","MKATOM","BODY","RPLACA",
+		"RPLACD","TSETQ", "NULL", "SET"
+	};
 
- static char BItype[]=
-    {10,10,10,11,11,11,10,10,11,10,
-     10,11,10,10,10,10,10,10,10,10,
-     10,10,10,11,11,10,10,10,10,10,
-     10,10,10,10,10,10,11,10,11
-    };
+	static char BItype[] = {
+		10,10,10,11,11,11,10,10,11,10,
+		10,11,10,10,10,10,10,10,10,10,
+		10,10,10,11,11,10,10,10,10,10,
+		10,10,10,10,10,10,11,10,11
+	};
 
- /* Number of builtin's in BI[] and BItype[] above. */
- #define NBI 39
+	/* Number of builtin's in BI[] and BItype[] above. */
+	#define NBI 39
 
- /* Allocate a global character array for message.s */
- sout= (char *)calloc(80,sizeof(char));
+	/* Allocate a global character array for message.s */
+	sout= (char *)calloc(80, sizeof(char));
 
- /* Allocate the input string. */
- g= (char *)calloc(202,sizeof(char));
+	/* Allocate the input string. */
+	g = (char *)calloc(202, sizeof(char));
 
- /* Allocate the list area. */
- P= (struct Listarea *)calloc(m,sizeof(struct Listarea));
+	/* Allocate the list area. */
+	P = (struct Listarea *)calloc(m, sizeof(struct Listarea));
 
- /* Initialize atom table names and the number table. */
- for (i= 0; i<n; i++)
-    {Atab[i].name[0]='\0'; nmark[i]=0; nx[i]= -1; Ntab[i].nlink=nf; nf=i;}
+	/* Initialize atom table names and the number table. */
+	for (i = 0; i< n; i++) {
+		Atab[i].name[0] = '\0';
+		nmark[i] = 0;
+		nx[i] = -1;
+		Ntab[i].nlink = nf;
+		nf = i;
+	}
 
- /* Install typed-case numbers for builtin functions and and special forms
-    into the atom table. */
- for (i= 0; i<NBI; i++)
-    {Atab[ptrv(ordatom(BI[i]))].L= tp((((int32)BItype[i])<<28),(i+1));}
+	/* Install typed-case numbers for builtin functions and and special forms
+	   into the atom table. */
+	for (i= 0; i<NBI; i++) {
+		Atab[ptrv(ordatom(BI[i]))].L = tp((((int32)BItype[i]) << 28), (i + 1));
+	}
 
- nilptr= ordatom("NIL"); Atab[ptrv(nilptr)].L= nilptr;
- tptr= ordatom("T");     Atab[ptrv(tptr)].L= tptr;
- quoteptr= ordatom("QUOTE");
+	nilptr = ordatom("NIL");
+	Atab[ptrv(nilptr)].L = nilptr;
+	tptr = ordatom("T");
+	Atab[ptrv(tptr)].L = tptr;
+	quoteptr = ordatom("QUOTE");
 
- /* Creating these lists in the atom-table ensures that we protect
-    them during garbage-collection. Make CURRENTIN and EAL not upper-case
-    to keep them private.*/
- currentin= ptrv(ordatom("CURRENTIN")); Atab[currentin].L= nilptr;
- eaL= ptrv(ordatom("EAL")); Atab[eaL].L= nilptr;
- sk= ptrv(ordatom("sreadlist")); Atab[sk].L= nilptr;
+	/* Creating these lists in the atom-table ensures that we protect
+	   them during garbage-collection. Make CURRENTIN and EAL not upper-case
+	   to keep them private.*/
+	currentin = ptrv(ordatom("CURRENTIN"));
+	Atab[currentin].L = nilptr;
+	eaL = ptrv(ordatom("EAL"));
+	Atab[eaL].L = nilptr;
+	sk = ptrv(ordatom("sreadlist"));
+	Atab[sk].L = nilptr;
 
 #define cilp Atab[currentin].L
 #define eaLp Atab[eaL].L
 #define skp Atab[sk].L
 
- /* Initialize the bindlist (bl) and plist fields. */
- for (i= 0; i<n; i++) Atab[i].bl= Atab[i].plist= nilptr;
+	/* Initialize the bindlist (bl) and plist fields. */
+	for (i= 0; i < n; i++) {
+		Atab[i].bl = Atab[i].plist = nilptr;
+	}
 
- /* Set up the list area free-space list. */
- for (i= 1; i<m; i++) {B(i)= fp; fp= i;} numf = m-1;
+	/* Set up the list area free-space list. */
+	for (i = 1; i < m; i++) {
+		B(i) = fp;
+		fp = i;
+	}
+	numf = m - 1;
 
- /* Prepare to read in predefined functions and special forms from the
-    lispinit file: these are APPEND, REVERSE, EQUAL, APPLY, INTO,
-    ONTO, NOT, NULL, ASSOC, NPROP, PUTPROP, GETPROP, and REMPROP */
+	/* Prepare to read in predefined functions and special forms from the
+	   lispinit file: these are APPEND, REVERSE, EQUAL, APPLY, INTO,
+	   ONTO, NOT, NULL, ASSOC, NPROP, PUTPROP, GETPROP, and REMPROP */
 
- /* Open the logfile. */
- logfilep= fopen("lisp.log","w");
- ourprint("ENTERING THE LISP INTERPRETER\n");
+	/* Open the logfile. */
+	logfilep = fopen("lisp.log", "w");
+	ourprint("ENTERING THE LISP INTERPRETER\n");
 
- /* Establish the input buffer and the input stream stack. */
- topInsave= NULL;
- strcpy(g,"@lispinit ");
- /* Initialize start & end pointers to string g. */
- pg= g; pge= g+strlen(g);
- filep= stdin;
+	/* Establish the input buffer and the input stream stack. */
+	topInsave = NULL;
+	strcpy(g, "@lispinit ");
+
+	/* Initialize start & end pointers to string g. */
+	pg = g;
+	pge = g + strlen(g);
+	filep = stdin;
 }
 
 
