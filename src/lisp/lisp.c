@@ -198,17 +198,28 @@ int main(void)
 
 /* Type-out the message msg and do longjmp() to top level. */
 void error(char *msg)
-{int32 i,t;
+{
+	int32 i, t;
 
- /* Discard all input S-expression and argument list stacks. */
- Atab[currentin].L= nilptr; Atab[eaL].L= nilptr; Atab[sk].L= nilptr;
+	/* Discard all input S-expression and argument list stacks. */
+	Atab[currentin].L = Atab[eaL].L = Atab[sk].L = nilptr;
 
- /* Reset all atoms to their top-level values. */
- for (i= 0; i<n; i++) if ((t= Atab[i].bl)!=nilptr)
-    {while (B(t)!=nilptr) t= B(t); Atab[i].L= A(t); Atab[i].bl= nilptr;}
+	/* Reset all atoms to their top-level values. */
+	for (i = 0; i < n; i++) {
+		if ((t = Atab[i].bl) != nilptr) {
+			while (B(t) != nilptr) {
+				t = B(t);
+				Atab[i].L = A(t);
+				Atab[i].bl = nilptr;
+			}
+		}
+	}
 
- ct= 0; ourprint("::"); ourprint(msg); ourprint("\n");
- longjmp(env,-1);
+	ct= 0;
+	ourprint("::");
+	ourprint(msg);
+	ourprint("\n");
+	longjmp(env,-1);
 }
 
 
