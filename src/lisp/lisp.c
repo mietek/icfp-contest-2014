@@ -657,21 +657,31 @@ ret:	return (nu(j));
    is not already present.  The typed-pointer to this ordinary atom is then
    returned. */
 int32 ordatom (char *s)
-{int32 j,c;
+{
+	int32 j, c;
 
-#define hashname(s) (abs((s[0]<<16)+(s[j-1]<<8)+j) % n)
+#define hashname(s) (abs((s[0] << 16) + (s[j - 1] << 8) + j) % n)
 
- j= strlen(s);
- j= hashname(s); c= 0;
+	j = strlen(s);
+	j = hashname(s);
+	c = 0;
 
-// DEBUG(printf("ordatom: `%s' hashes to %d. k=%d, n=%d\n",s,j,k,n););
- while (Atab[j].name[0]!=EOS)
-    {if (strcmp(Atab[j].name,s) == 0) goto ret;
-     else if (++j >= n) {j= 0; if (++c>1) error("atom table is full");}
-    }
+	/* DEBUG(printf("ordatom: `%s' hashes to %d. k=%d, n=%d\n", s, j, k, n);); */
+	while (Atab[j].name[0] != EOS) {
+		if (strcmp(Atab[j].name, s) == 0) {
+			goto ret;
+		}
+		else if (++j >= n) {
+			j= 0;
+			if (++c > 1) {
+				error("atom table is full");
+			}
+		}
+	}
 
- strcpy(Atab[j].name,s); Atab[j].L= ud(j);
-ret: return(oa(j));
+	strcpy(Atab[j].name, s);
+	Atab[j].L = ud(j);
+ret:	return (oa(j));
 }
 
 
