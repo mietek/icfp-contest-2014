@@ -687,41 +687,70 @@ int32 ordatom (char *s)
 
 	strcpy(Atab[j].name, s);
 	Atab[j].L = ud(j);
-ret:	return (oa(j));
+ret:
+	return (oa(j));
 }
 
 
 /* The S-expression pointed to by j is typed out. */
 void swrite(int32 j)
-{int32 i;
- int16 listsw;
+{
+	int32 i;
+	int16 listsw;
 
- i= ptrv(j);
- switch (type(j))
-    {case 0: /* Check for a list. */
-        j= i;
-        while (type(B(j)) == 0) j= B(j);
-        listsw= (B(j) == nilptr);
-        ourprint("(");
-        while (listsw)
-	   {swrite(A(i)); if ((i= B(i)) == nilptr) goto close; ourprint(" ");}
-        swrite(A(i)); ourprint(" . "); swrite(B(i));
-close:  ourprint(")");
-        break;
+	i = ptrv(j);
+	switch (type(j)) {
+	case 0: /* Check for a list. */
+		j = i;
+		while (type(B(j)) == 0) {
+			j= B(j);
+		}
+		listsw = (B(j) == nilptr);
+		ourprint("(");
+		while (listsw) {
+			swrite(A(i));
+			if ((i= B(i)) == nilptr) {
+				goto close;
+			}
+			ourprint(" ");
+		}
+		swrite(A(i));
+		ourprint(" . ");
+		swrite(B(i));
+close:
+		ourprint(")");
+		break;
 
-     case  8: ourprint(Atab[i].name); break;
-     case  9: sprintf(sout,"%-g",Ntab[i].num); ourprint(sout); break;
-     case 10: sprintf(sout,"{builtin function: %s}",Atab[i].name);
-	      ourprint(sout); break;
-     case 11: sprintf(sout,"{builtin special form: %s}",Atab[i].name);
-	      ourprint(sout); break;
-     case 12: sprintf(sout,"{user defined function: %s}",Atab[i].name);
-	      ourprint(sout); break;
-     case 13: sprintf(sout,"{user defined special form: %s}",Atab[i].name);
-	      ourprint(sout); break;
-     case 14: ourprint("{unnamed function}"); break;
-     case 15: ourprint("{unnamed special form}"); break;
-    }
+	case 8:
+		ourprint(Atab[i].name);
+		break;
+	case 9:
+		sprintf(sout, "%-g", Ntab[i].num);
+		ourprint(sout);
+		break;
+	case 10:
+		sprintf(sout, "{builtin function: %s}", Atab[i].name);
+		ourprint(sout);
+		break;
+	case 11:
+		sprintf(sout, "{builtin special form: %s}", Atab[i].name);
+		ourprint(sout);
+		break;
+	case 12:
+		sprintf(sout, "{user defined function: %s}", Atab[i].name);
+		ourprint(sout);
+		break;
+	case 13:
+		sprintf(sout, "{user defined special form: %s}", Atab[i].name);
+		ourprint(sout);
+		break;
+	case 14:
+		ourprint("{unnamed function}");
+		break;
+	case 15:
+		ourprint("{unnamed special form}");
+		break;
+	}
 }
 
 
@@ -730,77 +759,101 @@ close:  ourprint(")");
 void traceprint(int32 v, int16 osw)
 /* int32 v; the object to be printed.
    int16 osw; 1 for seval() output, 0 for seval() input. */
-{if (tracesw>0)
-    {if (osw == 1) sprintf(sout,"%d result:",ct--);
-     else sprintf(sout,"%d seval:",++ct);
-     ourprint(sout); swrite(v); ourprint("\n");
-    }
+{
+	if (tracesw > 0) {
+		if (osw == 1) {
+			sprintf(sout, "%d result:", ct--);
+		} else {
+			sprintf(sout, "%d seval:", ++ct);
+		}
+		ourprint(sout);
+		swrite(v);
+		ourprint("\n");
+	}
 }
 
 
 /* Evaluate the S-expression pointed to by the typed-pointer p; construct the
    result value as necessary; return a typed-pointer to the result. */
 int32 seval(int32 p)
-{int32 ty,t,v,j,f,fa,na;
-/* I think t can be static. also fa and j? Test later. */
+{
+	int32 ty, t, v, j, f, fa, na;
+	/* I think t can be static. also fa and j? Test later. */
 
- int32 *endeaL;
- static double s;
+	int32 *endeaL;
+	static double s;
 
 #define U1 A(p)
 #define U2 A(B(p))
 #define E1 A(p)
 #define E2 A(B(p))
 
-#define Return(v) {traceprint(v,1); return(v);}
+#define Return(v) { traceprint(v, 1); return(v); }
 
- traceprint(p,0);
+	traceprint(p, 0);
 
- if(type(p)!=0)
-   {/* p does not point to a non-atomic S-expression.
+	if (type(p) != 0) {
+		/* p does not point to a non-atomic S-expression.
 
-       If p is a type-8 typed pointer to an ordinary atom whose value is a
-       builtin or user-defined function or special form, then a typed-pointer
-       to that atom-table entry with typecode 10, 11, 12, or 13, depending upon
-       the value of the atom, is returned.  Note that this permits us to know
-       the names of functions and special forms.
+		   If p is a type-8 typed pointer to an ordinary atom whose value is a
+		   builtin or user-defined function or special form, then a typed-pointer
+		   to that atom-table entry with typecode 10, 11, 12, or 13, depending upon
+		   the value of the atom, is returned.  Note that this permits us to know
+		   the names of functions and special forms.
 
-       if p is a type-8 typed pointer to an ordinary atom whose value is not a
-       builtin or user defined function or special form, and thus has the type-
-       code 8, 9, 14, or 15, then a typed-pointer corresponding to the value of
-       this atom is returned.
+		   if p is a type-8 typed pointer to an ordinary atom whose value is not a
+		   builtin or user defined function or special form, and thus has the type-
+		   code 8, 9, 14, or 15, then a typed-pointer corresponding to the value of
+		   this atom is returned.
 
-       if p is a non-type-8 typed-pointer to a number atom or to a function or
-       special form (named or unnamed), then the same pointer p is returned. */
+		   if p is a non-type-8 typed-pointer to a number atom or to a function or
+		   special form (named or unnamed), then the same pointer p is returned. */
 
-    if ((t= type(p))!=8) Return(p); j= ptrv(p);
+		if ((t = type(p)) != 8) {
+			Return(p);
+		}
+		j = ptrv(p);
 
-    /* The association list is implemented with shallow binding in the atom-
-       table, so the current values of all atoms are found in the atom table. */
+		/* The association list is implemented with shallow binding in the atom-
+		   table, so the current values of all atoms are found in the atom table. */
 
-    if (Atab[j].name[0] == '!')
-       {tracesw= (strcmp(Atab[j].name,"!TRACE") == 0)?1:0; longjmp(env,-1);}
+		if (Atab[j].name[0] == '!') {
+			tracesw = (strcmp(Atab[j].name, "!TRACE") == 0) ? 1 : 0;
+			longjmp(env, -1);
+		}
 
-    if ((t= type(Atab[j].L)) == 1)
-       {sprintf(sout,"%s is undefined\n",Atab[j].name); error(sout);}
+		if ((t = type(Atab[j].L)) == 1) {
+			sprintf(sout, "%s is undefined\n", Atab[j].name);
+			error(sout);
+		}
 
-    if (namedfsf(t)) Return(tp(t<<28,j));
-    Return(Atab[j].L);
-   } /* End of if (type(p)!=0). */
+		if (namedfsf(t)) {
+			Return(tp(t << 28, j));
+		}
+		Return(Atab[j].L);
+	} /* End of if (type(p) != 0). */
 
- /* Save the list consisting of the current function and the supplied
-    arguments as the top value of the currentin list to protect it
-    from garbage collection. The currentin list is a list of lists. */
+	/* Save the list consisting of the current function and the supplied
+	   arguments as the top value of the currentin list to protect it
+	   from garbage collection. The currentin list is a list of lists. */
 
- cilp= newloc(p,cilp);
+	cilp = newloc(p, cilp);
 
- /* Compute the function or special form to be applied. */
- tracesw-- ; f= seval(A(p)); tracesw++; ty= type(f);
- if (! fctform(ty)) error(" invalid function or special form");
- f= ptrv(f); if (! unnamedfsf(ty)) f= ptrv(Atab[f].L);
+	/* Compute the function or special form to be applied. */
+	tracesw--;
+	f = seval(A(p));
+	tracesw++;
+	ty = type(f);
+	if (!fctform(ty)) {
+		error(" invalid function or special form");
+	}
+	f = ptrv(f);
+	if (!unnamedfsf(ty)) {
+		f = ptrv(Atab[f].L);
+	}
 
- /* Now let go of the supplied input function. */
- A(cilp)= p= B(p);
+	/* Now let go of the supplied input function. */
+	A(cilp) = p = B(p);
 
  /* If f is a function (not a special form), build a new list of its
     evaluated arguments and add it to the eaL list (the eaL list is a
