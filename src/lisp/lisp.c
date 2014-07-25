@@ -346,33 +346,58 @@ void initlisp(void)
    SREAD constructs an S-expression and returns a typed pointer to it
    as its result. */
 int32 sread(void)
-{int32 j,k,t,c;
+{
+	int32 j, k, t, c;
 
- if ((c= e())<=0) return(c);
+	if ((c = e()) <= 0) {
+		return (c);
+	}
 
- if (c == 1) { if ((k= e()) == 4) return(nilptr); else pb= k; }
- /* To permit recursion, skp is a list of lists. */
- skp= newloc(nilptr,skp);
- A(skp)= j= k= newloc(nilptr,nilptr);
+	if (c == 1) {
+		if ((k = e()) == 4) {
+			return (nilptr);
+		} else {
+			pb = k;
+		}
+	}
 
- /* We will return k, but we will fill node j first. */
- if (c == 1)
-    {scan: A(j)= sread();
-     next: if ((c= e())<=2)
-              {t= newloc(nilptr,nilptr); B(j)= t; j= t;
-               if (c<=0) {A(j)= c; goto next;}
-               pb= c; goto scan;
-              }
-     if (c!=4) {B(j)= sread(); if (e()!=4) error("syntax error");}
-     skp= B(skp); return(k);
-    }
- if (c == 2)
-    {A(j)= quoteptr; B(j)= t= newloc(nilptr,nilptr); A(t)= sread();
-     skp= B(skp); return(k);
-    }
- error("bad syntax");
- /* TODO: Never reached. */
- return 0;
+	/* To permit recursion, skp is a list of lists. */
+	skp = newloc(nilptr, skp);
+	A(skp) = j = k = newloc(nilptr, nilptr);
+
+	/* We will return k, but we will fill node j first. */
+	if (c == 1) {
+scan:		A(j) = sread();
+next:		if ((c = e()) <= 2) {
+			t = newloc(nilptr, nilptr);
+			B(j) = t;
+			j = t;
+			if (c <= 0) {
+				A(j) = c;
+				goto next;
+			}
+			pb = c;
+			goto scan;
+		}
+		if (c != 4) {
+			B(j) = sread();
+			if (e() != 4) {
+				error("syntax error");
+			}
+		}
+		skp = B(skp);
+		return (k);
+	}
+	if (c == 2) {
+		A(j) = quoteptr;
+		B(j) = t = newloc(nilptr, nilptr);
+		A(t) = sread();
+		skp = B(skp);
+		return (k);
+	}
+	error("bad syntax");
+	/* TODO: Never reached. */
+	return 0;
 }
 
 
