@@ -1,22 +1,18 @@
-/*
+/* LISP INTERPRETER
+   -----------------
 
-                        LISP  INTERPRETER
-                        -----------------
+   This progam is a GOVOL LISP interpreter.  This interpreter consists of
+   three major functions: SREAD, SEVAL, and SWRITE.  SREAD scans the
+   input string for input S-expressions (atoms and dotted pairs) and
+   returns a corresponding typed-pointer. The SEVAL function takes as
+   input a typed-pointer p to an input S-expression and evaluates it and
+   returns a typed pointer to its result.  SWRITE takes as input the
+   typed pointer returned from SEVAL and prints out the result.
 
-This progam is a GOVOL LISP interpreter.  This interpreter consists of
-three major functions: SREAD, SEVAL, and SWRITE.  SREAD scans the
-input string for input S-expressions (atoms and dotted pairs) and
-returns a corresponding typed-pointer. The SEVAL function takes as
-input a typed-pointer p to an input S-expression and evaluates it and
-returns a typed pointer to its result.  SWRITE takes as input the
-typed pointer returned from SEVAL and prints out the result.
-
-LISP input lines beginning with a "/" are comment lines.  Indirect
-input text is taken from a file Z to replace the directive of the form
-"@Z".  SEVAL tracing can be turned on by using the directive "!trace",
-and turned off with the directive "!notrace".
-
-*/
+   LISP input lines beginning with a "/" are comment lines.  Indirect
+   input text is taken from a file Z to replace the directive of the form
+   "@Z".  SEVAL tracing can be turned on by using the directive "!trace",
+   and turned off with the directive "!notrace". */
 
 #define int16 int
 #define int32 int
@@ -38,14 +34,18 @@ and turned off with the directive "!notrace".
 #define AND &&
 #define NOT !
 
+/* Size of Atom and Number tables. */
 #define n 1000
+/* Size of list-area. */
 #define m 6000
-/* n = size of Atom and Number tables, m = size of list-area. */
 
-jmp_buf env;         /* struct to hold environment for longjump */
-char *sout;          /* general output buffer pointer */
+/* Struct to hold environment for longjump. */
+jmp_buf env;
 
-/* The atom table */
+/* General output buffer pointer. */
+char *sout;
+
+/* The atom table. */
 struct Atomtable {char name[16]; int32 L; int32 bl; int32 plist;} Atab[n];
 
 /* The number table is used for storing floating point numbers.  The
@@ -53,46 +53,47 @@ struct Atomtable {char name[16]; int32 L; int32 bl; int32 plist;} Atab[n];
    table free space list. */
 union Numbertable {double num; int16 nlink;} Ntab[n];
 
-/* the number hash index table */
+/* The number hash index table. */
 int16 nx[n];
 
-/* the number table free space list head pointer */
+/* The number table free space list head pointer. */
 int16 nf= -1;
 
-/* the number table mark array nmark is used in garbage collection to
-   mark words not to be returned to the free space list */
-char nmark[n]; /* an array of 1-bit entries would suffice */
+/* The number table mark array nmark is used in garbage collection to
+   mark words not to be returned to the free space list.
+   An array of 1-bit entries would suffice. */
+char nmark[n];
 
-/* The list area */
+/* The list area. */
 struct Listarea {int32 car; int32 cdr;} *P;
 
-/* the list area free space list head pointer */
+/* The list area free space list head pointer. */
 int16 fp= -1;
 
-/* the put-back variable */
+/* The put-back variable. */
 int32 pb= 0;
 
-/* The input string and related pointers */
+/* The input string and related pointers. */
 char *g,*pg,*pge;
 
-/* the input stream stack structure and head pointer */
+/* The input stream stack structure and head pointer. */
 struct Insave
    {struct Insave *link; char *pg, *pge; char g[202]; FILE *filep;};
 struct Insave *topInsave;
 
-/* the input prompt character */
+/* The input prompt character. */
 char prompt;
 
-/* seval depth count and trace switch */
+/* seval depth count and trace switch. */
 int16 ct= 0, tracesw= 0;
 
-/* Global ordinary atom typed-pointers */
+/* Global ordinary atom typed-pointers. */
 int32 nilptr,tptr,currentin,eaL,quoteptr,sk,traceptr;
 
-/* Number of free list-nodes */
+/* Number of free list-nodes. */
 int32 numf;
 
-/* define global macros */
+/* Global macros. */
 #define A(j)           P[j].car
 #define B(j)           P[j].cdr
 
@@ -118,11 +119,11 @@ int32 numf;
 #define tf(j)          (0xe0000000 | (j))
 #define ts(j)          (0xf0000000 | (j))
 
-/* variables used in file operations */
+/* Variables used in file operations. */
 FILE *filep;
 FILE *logfilep;
 
-/* forward references */
+/* Forward references. */
 int32 seval(int32 i);
 void initlisp(void);
 int32 sread(void);
@@ -141,12 +142,10 @@ int16 fgetline(char *s, int16 lim, FILE *stream);
 void ourprint(char *s);
 
 
+/* For debugging to see if we are leaking list-nodes.
+   We are to protect r from garbage-collection.
+   This function can be called from within the main loop. */
 void spacerpt(int32 r)
-/*
-  For debugging to see if we are leaking list-nodes.
-  We are to protect r from garbage-collection.
-  This function can be called from within the main loop.
-*/
 {char s[60];
  int16 t;
 
@@ -162,16 +161,14 @@ void spacerpt(int32 r)
 }
 
 
+/* The main read/eval/print loop. */
 int main(void)
-/*
- Here is the main read/eval/print loop.
-*/
 {int32 r;
 
  initlisp();
 
  setjmp(env);
- /* calling error() returns to here by longjmp() */
+ /* Calling error() returns to here by longjmp(). */
 
  for (;;) {ourprint("\n");
            prompt= '*';
@@ -182,11 +179,8 @@ int main(void)
 }
 
 
+/* Type-out the message msg and do longjmp() to top level. */
 void error(char *msg)
-/* char  *msg;   message to type out */
-/*
- Type-out the message msg and do longjmp() to top level
-*/
 {int32 i,t;
 
  /* discard all input S-expression and argument list stacks */
@@ -201,19 +195,14 @@ void error(char *msg)
 }
 
 
+/* Print the string s to the terminal, and also in the logfile, lisp.log */
 void ourprint(char *s)
-/* char *s; message to be typed out and logged */
-/*
- Print the string s to the terminal, and also in the logfile, lisp.log
-*/
 {printf("%s",s); fflush(stdout); fprintf(logfilep,"%s",s); fflush(logfilep);}
 
 
+/* This procedure installs all builtin functions and special forms into
+   the atom table.  It also initializes the number table and list area. */
 void initlisp(void)
-/*
- This procedure installs all builtin functions and special forms into
- the atom table.  It also initializes the number table and list area.
-*/
 {int32 i;
 
  static char *BI[]=
@@ -231,24 +220,24 @@ void initlisp(void)
      10,10,10,10,10,10,11,10,11
     };
 
- /* number of builtin's in BI[] and BItype[] above */
+ /* Number of builtin's in BI[] and BItype[] above. */
  #define NBI 39
 
- /* allocate a global character array for messages */
+ /* Allocate a global character array for message.s */
  sout= (char *)calloc(80,sizeof(char));
 
- /* allocate the input string */
+ /* Allocate the input string. */
  g= (char *)calloc(202,sizeof(char));
 
- /* allocate the list area */
+ /* Allocate the list area. */
  P= (struct Listarea *)calloc(m,sizeof(struct Listarea));
 
-/* initialize atom table names and the number table */
+ /* Initialize atom table names and the number table. */
  for (i= 0; i<n; i++)
     {Atab[i].name[0]='\0'; nmark[i]=0; nx[i]= -1; Ntab[i].nlink=nf; nf=i;}
 
- /* install typed-case numbers for builtin functions and and special forms into
-    the atom table */
+ /* Install typed-case numbers for builtin functions and and special forms
+    into the atom table. */
  for (i= 0; i<NBI; i++)
     {Atab[ptrv(ordatom(BI[i]))].L= tp((((int32)BItype[i])<<28),(i+1));}
 
@@ -267,54 +256,53 @@ void initlisp(void)
 #define eaLp Atab[eaL].L
 #define skp Atab[sk].L
 
- /* initialize the bindlist (bl) and plist fields */
+ /* Initialize the bindlist (bl) and plist fields. */
  for (i= 0; i<n; i++) Atab[i].bl= Atab[i].plist= nilptr;
 
- /* set up the list area free-space list */
+ /* Set up the list area free-space list. */
  for (i= 1; i<m; i++) {B(i)= fp; fp= i;} numf = m-1;
 
  /* Prepare to read in predefined functions and special forms from the
     lispinit file: these are APPEND, REVERSE, EQUAL, APPLY, INTO,
     ONTO, NOT, NULL, ASSOC, NPROP, PUTPROP, GETPROP, and REMPROP */
 
- /* open the logfile */
+ /* Open the logfile. */
  logfilep= fopen("lisp.log","w");
  ourprint(" ENTERING THE LISP INTERPRETER \n");
 
- /* establish the input buffer and the input stream stack */
+ /* Establish the input buffer and the input stream stack. */
  topInsave= NULL;
  strcpy(g,"@lispinit ");
- pg= g; pge= g+strlen(g);/* initialize start & end pointers to string g */
+ /* Initialize start & end pointers to string g. */
+ pg= g; pge= g+strlen(g);
  filep= stdin;
 }
 
 
-int32 sread(void)
-/*
-  This procedure scans an input string g using a lexical token scanning
-  routine, e(), where e() returns
-                    1 if the token is '('
-                    2 if the token is '''
-                    3 if the token is '.'
-                    4 if the token is ')'
-  or a typed pointer d to an atom or number stored in row ptrv(d) in
-  the atom or number tables. Due to the typecode (8 or 9) of d, d is a
-  negative 32-bit integer.  The token found by e() is stripped from
-  the front of g.
+/* This procedure scans an input string g using a lexical token scanning
+   routine, e(), where e() returns
+      1 if the token is '('
+      2 if the token is '''
+      3 if the token is '.'
+      4 if the token is ')'
+   or a typed pointer d to an atom or number stored in row ptrv(d) in
+   the atom or number tables. Due to the typecode (8 or 9) of d, d is a
+   negative 32-bit integer.  The token found by e() is stripped from
+   the front of g.
 
-  SREAD constructs an S-expression and returns a typed pointer to it
-  as its result.
-*/
+   SREAD constructs an S-expression and returns a typed pointer to it
+   as its result. */
+int32 sread(void)
 {int32 j,k,t,c;
 
  if ((c= e())<=0) return(c);
 
  if (c EQ 1) { if ((k= e()) EQ 4) return(nilptr); else pb= k; }
- /* to permit recursion, skp is a list of lists. */
+ /* To permit recursion, skp is a list of lists. */
  skp= newloc(nilptr,skp);
  A(skp)= j= k= newloc(nilptr,nilptr);
 
- /* we will return k, but we will fill node j first */
+ /* We will return k, but we will fill node j first. */
  if (c EQ 1)
     {scan: A(j)= sread();
      next: if ((c= e())<=2)
@@ -330,20 +318,19 @@ int32 sread(void)
      skp= B(skp); return(k);
     }
  error("bad syntax");
- return 0; /* TODO: never reached */
+ /* TODO: Never reached. */
+ return 0;
 }
 
 
+/* E is a lexical token scanning routine which has no input and returns
+      1 if the token is '('
+      2 if the token is '''
+      3 if the token is '.'
+      4 if the token is ')'
+   or a negative typed-pointer to an entry in the atom table or the number
+   table. */
 int32 e(void)
-/*
- E is a lexical token scanning routine which has no input and returns
-       1 if the token is '('
-       2 if the token is '''
-       3 if the token is '.'
-       4 if the token is ')'
-       or a negative typed-pointer to an entry in the atom table or the
-       the number table.
-*/
 {double v,f,k,sign;
  int32 t,c;
  char nc[50], *np;
@@ -364,15 +351,15 @@ int32 e(void)
  if (pb!=0) {t= pb; pb= 0; return(t);}
 
 start:
- while ((c= getgchar()) EQ BLANK);  /* remove blanks */
+ while ((c= getgchar()) EQ BLANK);  /* Remove blanks. */
 
  if (c EQ OPENP)
-    {while (lookgchar() EQ BLANK) getgchar(); /* remove blanks */
+    {while (lookgchar() EQ BLANK) getgchar(); /* Remove blanks. */
      if (lookgchar() EQ CLOSEP) {getgchar(); return(nilptr);} else return(1);
     }
  if (c EQ EOS)
     {if (topInsave EQ NULL) {fclose(logfilep); exit(0);}
-     /* restore the previous input stream */
+     /* Restore the previous input stream. */
      fclose(filep);
      strcpy(g,topInsave->g); pg= topInsave->pg; pge= topInsave->pge;
      filep= topInsave->filep; topInsave= topInsave->link;
@@ -385,26 +372,26 @@ start:
     {if (DIGIT(lookgchar())) {sign= 1.0; v= 0.0; goto fraction;} return(3);}
  if (NOT (DIGIT(c) OR ((c EQ PLUS OR c EQ MINUS) AND
      (DIGIT(lookgchar()) OR lookgchar() EQ DOT))))
-    {np= nc; *np++= c;    /* put c in nc[0] */
+    {np= nc; *np++= c;    /* Put c in nc[0]. */
      for (c= lookgchar();
 	  c!=BLANK AND c!=DOT AND c!=OPENP AND c!=CLOSEP;
 	  c= lookgchar())
-	*(np++)= getgchar(); /* add a character */
-     *np= EOS; /* nc is now a string */
+	*(np++)= getgchar(); /* Add a character. */
+     *np= EOS; /* nc is now a string. */
      if (*nc EQ '@')
-	{/* switch input streams */
-	 /* save the current input stream */
+	{/* Switch input streams. */
+	 /* Save the current input stream. */
 	 tb= (struct Insave *)calloc(1,sizeof(struct Insave));
          tb->link= topInsave; topInsave= tb;
 	 strcpy(tb->g,g); tb->pg= pg; tb->pge= pge; tb->filep= filep;
 
-	 /* set up the new input stream */
+	 /* Set up the new input stream. */
          *g= EOS; pg= pge= g; prompt= '@';
-	 filep= fopen(nc+1,"r"); /* skip over the @ */
+	 filep= fopen(nc+1,"r"); /* Skip over the @. */
          if (filep EQ NULL) error("Cannot open @file!");
          goto start;
 	}
-     /* convert the string nc to upper case */
+     /* Convert the string nc to upper case. */
      for (np= nc; *np!=EOS; np++)
 	if (ISLOWER((int16)*np)) *np= (char)TOUPPER((int16)*np);
      return(ordatom(nc));
@@ -424,26 +411,20 @@ start:
 }
 
 
+/* Fill the buffer string pg (=pointer to g) if needed, and then remove and
+   return the next character from the input. */
 char getgchar(void)
-/*
- Fill the buffer string pg (=pointer to g) if needed, and then remove and
- return the next character from the input.
-*/
 {fillg(); return(*pg++);}
 
 
+/* Fill the buffer string pg (=g) if needed, and then return a copy of
+   the next character in the input, but don't advance pg. */
 char lookgchar(void)
-/*
- Fill the buffer string pg (=g) if needed, and then return a copy of
- the next character in the input, but don't advance pg..
-*/
 {fillg(); return(*pg);}
 
 
+/* Read a line into g[]. A line starting with a "/" is a comment line. */
 void fillg(void)
-/*
- Read a line into g[]. A line starting with a "/" is a comment line.
-*/
 {while (pg>=pge)
    {sprompt: if (filep EQ stdin) {sprintf(sout,"%c",prompt); ourprint(sout);}
     if (fgetline(g,200,filep)<0) return;
@@ -454,13 +435,11 @@ void fillg(void)
 }
 
 
+/* fgetline() gets a line (CRLF or LF delimited) from stream and puts it into s
+   (up to lim chars).  The function returns the length of this string. If there
+   are no characters but just EOF, it returns -1 (EOF) as the length. There is
+   no deblanking except to drop CR's and LF's ('\n') and map TABs to blanks. */
 int16 fgetline(char *s, int16 lim, FILE *stream)
-/*
- fgetline() gets a line (CRLF or LF delimited) from stream and puts it into s (up
- to lim chars).  The function returns the length of this string.  If there
- are no characters but just EOF, it returns -1 (EOF) as the length.  There
- is no deblanking except to drop CR's and LF's ('\n') and map TABs to blanks.
-*/
 {int16 c,i;
 #define TAB 9
  for (i=0; i<lim AND (c=fgetc(stream))!=EOF AND c!='\n'; ++i)
@@ -470,12 +449,10 @@ int16 fgetline(char *s, int16 lim, FILE *stream)
 }
 
 
+/* The number r is looked-up in the number table and stored there as a lazy
+   number atom if it is not already present.  The typed-pointer to this number
+   atom is returned. */
 int32 numatom(double r)
-/*
- The number r is looked-up in the number table and stored there as a lazy
- number atom if it is not already present.  The typed-pointer to this number
- atom is returned.
-*/
 {int32 j;
 
 #define hashnum(r) ((*(1+(int32 *)(&r)) & 0x7fffffff) % n)
@@ -491,13 +468,11 @@ ret: return(nu(j));
 }
 
 
+/* The ordinary atom whose name is given as the argument string s is looked-up
+   in the atom table and stored there as an atom with the value undefined if it
+   is not already present.  The typed-pointer to this ordinary atom is then
+   returned. */
 int32 ordatom (char *s)
-/*
- The ordinary atom whose name is given as the argument string s is looked-up
- in the atom table and stored there as an atom with the value undefined if it
- is not already present.  The typed-pointer to this ordinary atom is then
- returned.
-*/
 {int32 j,c;
 
 #define hashname(s) (abs((s[0]<<16)+(s[j-1]<<8)+j) % n)
@@ -516,10 +491,8 @@ ret: return(oa(j));
 }
 
 
+/* The S-expression pointed to by j is typed out. */
 void swrite(int32 j)
-/*
- The S-expression pointed to by j is typed out.
-*/
 {int32 i;
  int16 listsw;
 
@@ -552,14 +525,11 @@ close:  ourprint(")");
 }
 
 
+/* This function prints out the input and the result for each successive
+   invocation of seval() when tracing is requested. */
 void traceprint(int32 v, int16 osw)
-/* int32 v; the object to be printed
- * int16 osw; 1 for seval() output, 0 for seval() input
- */
-/*
- This function prints out the input and the result for each successive
- invocation of seval() when tracing is requested.
-*/
+/* int32 v; the object to be printed,
+   int16 osw; 1 for seval() output, 0 for seval() input. */
 {if (tracesw>0)
     {if (osw EQ 1) sprintf(sout,"%d result:",ct--);
      else sprintf(sout,"%d seval:",++ct);
@@ -568,13 +538,11 @@ void traceprint(int32 v, int16 osw)
 }
 
 
+/* Evaluate the S-expression pointed to by the typed-pointer p; construct the
+   result value as necessary; return a typed-pointer to the result. */
 int32 seval(int32 p)
-/*
- Evaluate the S-expression pointed to by the typed-pointer p; construct the
- result value as necessary; return a typed-pointer to the result.
-*/
 {int32 ty,t,v,j,f,fa,na;
-/* I think t can be static. also fa and j?  -test later. */
+/* I think t can be static. also fa and j? Test later. */
 
  int32 *endeaL;
  static double s;
@@ -590,26 +558,25 @@ int32 seval(int32 p)
 
  if(type(p)!=0)
    {/* p does not point to a non-atomic S-expression.
-     *
-     * If p is a type-8 typed pointer to an ordinary atom whose value is a
-     * builtin or user-defined function or special form, then a typed-pointer
-     * to that atom-table entry with typecode 10, 11, 12, or 13, depending upon
-     * the value of the atom, is returned.  Note that this permits us to know
-     * the names of functions and special forms.
-     *
-     * if p is a type-8 typed pointer to an ordinary atom whose value is not a
-     * builtin or user defined function or special form, and thus has the type-
-     * code 8, 9, 14, or 15, then a typed-pointer corresponding to the value of
-     * this atom is returned.
-     *
-     * if p is a non-type-8 typed-pointer to a number atom or to a function or
-     * special form (named or unnamed), then the same pointer p is returned.
-     */
+
+       If p is a type-8 typed pointer to an ordinary atom whose value is a
+       builtin or user-defined function or special form, then a typed-pointer
+       to that atom-table entry with typecode 10, 11, 12, or 13, depending upon
+       the value of the atom, is returned.  Note that this permits us to know
+       the names of functions and special forms.
+
+       if p is a type-8 typed pointer to an ordinary atom whose value is not a
+       builtin or user defined function or special form, and thus has the type-
+       code 8, 9, 14, or 15, then a typed-pointer corresponding to the value of
+       this atom is returned.
+
+       if p is a non-type-8 typed-pointer to a number atom or to a function or
+       special form (named or unnamed), then the same pointer p is returned. */
 
     if ((t= type(p))!=8) Return(p); j= ptrv(p);
 
-   /* The association list is implemented with shallow binding in the atom-
-      table, so the current values of all atoms are found in the atom table. */
+    /* The association list is implemented with shallow binding in the atom-
+       table, so the current values of all atoms are found in the atom table. */
 
     if (Atab[j].name[0] EQ '!')
        {tracesw= (strcmp(Atab[j].name,"!TRACE") EQ 0)?1:0; longjmp(env,-1);}
@@ -627,22 +594,22 @@ int32 seval(int32 p)
 
  cilp= newloc(p,cilp);
 
- /* compute the function or special form to be applied */
+ /* Compute the function or special form to be applied. */
  tracesw-- ; f= seval(A(p)); tracesw++; ty= type(f);
  if (NOT fctform(ty)) error(" invalid function or special form");
  f= ptrv(f); if (NOT unnamedfsf(ty)) f= ptrv(Atab[f].L);
 
- /* now let go of the supplied input function */
+ /* Now let go of the supplied input function. */
  A(cilp)= p= B(p);
 
  /* If f is a function (not a special form), build a new list of its
     evaluated arguments and add it to the eaL list (the eaL list is a
     list of lists.)  Then let go of the list of supplied arguments,
-    replacing it with the new list of evaluated arguments */
+    replacing it with the new list of evaluated arguments. */
  if (fct(ty))
-    {/* compute the actual arguments */
+    {/* Compute the actual arguments. */
      eaLp= newloc(nilptr,eaLp);
-     /* evaluate the actual arguments and build a list by tail-cons-ing! */
+     /* Evaluate the actual arguments and build a list by tail-cons-ing! */
      endeaL= &A(eaLp);
      while (p!=nilptr)
         {*endeaL= newloc(seval(A(p)),nilptr); endeaL= &B(*endeaL); p= B(p);}
@@ -660,17 +627,16 @@ int32 seval(int32 p)
  if (NOT builtin(ty))
     {/* f is a non-builtin function or non-builtin special form.  do
         shallow binding of the arguments and evaluate the body of f by
-        calling seval */
-     fa= A(f); /* fa points to the first node of the formal argument list */
-     na= 0;    /* na counts the number of arguments */
-     /* run through the arguments and place them as the top values of
+        calling seval. */
+     fa= A(f); /* fa points to the first node of the formal argument list. */
+     na= 0;    /* na counts the number of arguments. */
+     /* Run through the arguments and place them as the top values of
 	the formal argument atoms in the atom-table.  Push the old
 	value of each formal argument on its binding list. */
      if (type(fa) EQ 8 AND fa != nilptr)
         {/* This will bind the entire input actual arglist as the
             single actual arg.  Sometimes, it is wrong - we should
             dereference the named fsf's in the p list, first. */
-
          t=ptrv(fa);
          Atab[t].bl=newloc(Atab[t].L,Atab[t].bl);
          Atab[t].L=p;
@@ -688,10 +654,10 @@ int32 seval(int32 p)
      /* The following code would forbid some useful trickery.
         if (fa!=nilptr) error("too many formals"); */
 
-     /* now apply the non-builtin special form or function */
+     /* Now apply the non-builtin special form or function. */
  apply: v= seval(B(f));
 
-     /* now unbind the actual arguments */
+     /* Now unbind the actual arguments. */
      fa= A(f);
      if (type(fa) EQ 8 AND fa != nilptr)
         {t= ptrv(fa); Atab[t].L= A(Atab[t].bl); Atab[t].bl= B(Atab[t].bl);}
@@ -700,15 +666,15 @@ int32 seval(int32 p)
            {t= ptrv(A(fa)); fa= B(fa);
             Atab[t].L= A(Atab[t].bl); Atab[t].bl= B(Atab[t].bl);
            }
-    } /* end non-builtins */
+    } /* End non-builtins. */
  else
-    {/* at this point we have a builtin function or special form.  f
+    {/* At this point we have a builtin function or special form.  f
         is the pointer value of the atom in the atom table for the
         called function or special form and p is the pointer to the
         argument list.*/
 
      v= nilptr;
-     switch (f) /* begin builtins */
+     switch (f) /* Begin builtins. */
      {case 1: /* CAR */
          if (NOT dottedpair(type(E1))) error("illegal CAR argument");
          v= A(E1); break;
@@ -720,8 +686,8 @@ int32 seval(int32 p)
          else error("Illegal CONS arguments");
          break;
 
-         /* for LAMBDA and SPECIAL, we could check that U1 is either an
-            ordinary atom or a list of ordinary atoms */
+         /* For LAMBDA and SPECIAL, we could check that U1 is either an
+            ordinary atom or a list of ordinary atoms. */
       case 4:/* LAMBDA */ v= tf(newloc(U1,U2)); break;
       case 5:/* SPECIAL */ v= ts(newloc(U1,U2)); break;
       case 6:/* SETQ */
@@ -729,20 +695,20 @@ int32 seval(int32 p)
 assign:  v= ptrv(f); endeaL= &Atab[v].L;
 doit:    t= seval(U2);
          switch (type(t))
-            {case 0: /* dotted pair */
-             case 8: /* ordinary atom */
-             case 9: /* number atom */
+            {case 0: /* Dotted pair. */
+             case 8: /* Ordinary atom. */
+             case 9: /* Number atom. */
 		*endeaL= t; break;
-             case 10: /* builtin function */
-             case 11: /* builtin special form */
-             case 12: /* user-defined function */
-             case 13: /* user-defined special form */
+             case 10: /* Builtin function */
+             case 11: /* Builtin special form. */
+             case 12: /* User-defined function. */
+             case 13: /* User-defined special form. */
 		*endeaL= Atab[ptrv(t)].L; break;
-             case 14: /* unnamed function */
+             case 14: /* Unnamed function */
 		*endeaL= uf(ptrv(t)); break;
-             case 15: /* unamed special form */
+             case 15: /* Unamed special form. */
 	        *endeaL= us(ptrv(t)); break;
-            } /* end of type(t) switch cases */
+            } /* End of type(t) switch cases. */
 
          tracesw--; v= seval(f); tracesw++; break;
 
@@ -854,22 +820,20 @@ doit:    t= seval(U2);
 	 f= seval(U1); goto assign;
 
       default: error("dryrot: bad builtin case number");
-     } /* end of switch cases */
+     } /* End of switch cases. */
 
-    } /* end builtins */
+    } /* End builtins. */
 
- /* pop the eaL list or pop the currentin list, whichever is active */
+ /* Pop the eaL list or pop the currentin list, whichever is active. */
  if (fct(ty)) eaLp= B(eaLp); else cilp= B(cilp);
 
  Return(v);
 }
 
 
+/* Allocates and loads the fields of a new location in the list area, with
+   a()= X, b()= Y. The index of the new location is returned. */
 int32 newloc(int32 x, int32 y)
-/*
- Allocates and loads the fields of a new location in the list area, with
- a()= X, b()= Y. The index of the new location is returned.
-*/
 {int32 j;
 
  if (fp<0) {gcmark(x); gcmark(y); gc(); if (fp<0) error("out of space");}
@@ -877,10 +841,8 @@ int32 newloc(int32 x, int32 y)
 }
 
 
+/* Garbage collector for number table and listarea. */
 void gc(void)
-/*
- Garbage collector for number table and listarea
-*/
 {int32 i,t;
 
 #define marked(p)    ((A(p) & 0x08000000)!=0)
@@ -907,10 +869,8 @@ void gc(void)
 }
 
 
+/* Mark the S-expression given by the typed-pointer p. */
 void gcmark(int32 p)
-/*
- Mark the S-expression given by the typed-pointer p.
-*/
 {static int32 s,t;
 
 #define marknum(t,p)   if ((t) EQ 9) nmark[ptrv(p)]= 1
