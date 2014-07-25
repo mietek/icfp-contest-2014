@@ -28,6 +28,7 @@
 
 /* Size of Atom and Number tables. */
 #define n 1000
+
 /* Size of list-area. */
 #define m 6000
 
@@ -38,18 +39,26 @@ jmp_buf env;
 char *sout;
 
 /* The atom table. */
-struct Atomtable {char name[16]; int32 L; int32 bl; int32 plist;} Atab[n];
+struct Atomtable {
+	char name[16];
+	int32 L;
+	int32 bl;
+	int32 plist;
+} Atab[n];
 
 /* The number table is used for storing floating point numbers.  The
    field nlink is used for linking number table nodes on the number
    table free space list. */
-union Numbertable {double num; int16 nlink;} Ntab[n];
+union Numbertable {
+	double num;
+	int16 nlink;
+} Ntab[n];
 
 /* The number hash index table. */
 int16 nx[n];
 
 /* The number table free space list head pointer. */
-int16 nf= -1;
+int16 nf = -1;
 
 /* The number table mark array nmark is used in garbage collection to
    mark words not to be returned to the free space list.
@@ -57,30 +66,36 @@ int16 nf= -1;
 char nmark[n];
 
 /* The list area. */
-struct Listarea {int32 car; int32 cdr;} *P;
+struct Listarea {
+	int32 car;
+	int32 cdr;
+} *P;
 
 /* The list area free space list head pointer. */
-int16 fp= -1;
+int16 fp = -1;
 
 /* The put-back variable. */
-int32 pb= 0;
+int32 pb = 0;
 
 /* The input string and related pointers. */
-char *g,*pg,*pge;
+char *g, *pg, *pge;
 
 /* The input stream stack structure and head pointer. */
-struct Insave
-   {struct Insave *link; char *pg, *pge; char g[202]; FILE *filep;};
-struct Insave *topInsave;
+struct Insave {
+	struct Insave *link;
+	char *pg, *pge;
+	char g[202];
+	FILE *filep;
+} *topInsave;
 
 /* The input prompt character. */
 char prompt;
 
 /* seval depth count and trace switch. */
-int16 ct= 0, tracesw= 0;
+int16 ct = 0, tracesw = 0;
 
 /* Global ordinary atom typed-pointers. */
-int32 nilptr,tptr,currentin,eaL,quoteptr,sk,traceptr;
+int32 nilptr, tptr, currentin, eaL, quoteptr, sk, traceptr;
 
 /* Number of free list-nodes. */
 int32 numf;
@@ -89,16 +104,16 @@ int32 numf;
 #define A(j)           P[j].car
 #define B(j)           P[j].cdr
 
-#define type(f)        (((f)>>28) & 0xf)
+#define type(f)        (((f) >> 28) & 0xf)
 #define ptrv(f)        (0x0fffffff & (f))
 #define sexp(t)        ((t) == 0 || (t) == 8 || (t) == 9)
-#define fctform(t)     ((t)>9)
+#define fctform(t)     ((t) > 9)
 #define builtin(t)     ((t) == 10 || (t) == 11)
 #define userdefd(t)    ((t) == 12 || (t) == 13)
 #define dottedpair(t)  ((t) == 0)
 #define fct(t)         ((t) == 10 || (t) == 12 || (t) == 14)
-#define unnamedfsf(t)  ((t)>13)
-#define namedfsf(t)    ((t)>9 && (t)<14)
+#define unnamedfsf(t)  ((t) > 13)
+#define namedfsf(t)    ((t) > 9 && (t) < 14)
 #define tp(t,j)        ((t) | (j))
 #define ud(j)          (0x10000000 | (j))
 #define se(j)          (0x00000000 | (j))
