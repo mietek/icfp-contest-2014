@@ -1246,10 +1246,23 @@ doit:
 /* Allocates and loads the fields of a new location in the list area, with
    a()= X, b()= Y. The index of the new location is returned. */
 int32 newloc(int32 x, int32 y)
-{int32 j;
+{
+	int32 j;
 
- if (fp<0) {gcmark(x); gcmark(y); gc(); if (fp<0) error("out of space");}
- j= fp; fp= B(j); A(j)= x; B(j)= y; numf--; return(j);
+	if (fp < 0) {
+		gcmark(x);
+		gcmark(y);
+		gc();
+		if (fp < 0) {
+			error("out of space");
+		}
+	}
+	j = fp;
+	fp = B(j);
+	A(j) = x;
+	B(j) = y;
+	numf--;
+	return (j);
 }
 
 
