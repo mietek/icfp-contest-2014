@@ -1268,29 +1268,51 @@ int32 newloc(int32 x, int32 y)
 
 /* Garbage collector for number table and listarea. */
 void gc(void)
-{int32 i,t;
+{
+	int32 i, t;
 
-#define marked(p)    ((A(p) & 0x08000000)!=0)
+#define marked(p)    ((A(p) & 0x08000000) != 0)
 #define marknode(p)  (A(p) |= 0x08000000)
 #define unmark(p)    (A(p) &= 0xf7ffffff)
 
- for (i= 0; i<n; i++)
-    {gcmark(Atab[i].L); gcmark(Atab[i].bl); gcmark(Atab[i].plist);}
+	for (i = 0; i < n; i++) {
+		gcmark(Atab[i].L);
+		gcmark(Atab[i].bl);
+		gcmark(Atab[i].plist);
+	}
 
- for (i= 0; i<n; i++) nx[i]= -1;
+	for (i = 0; i < n; i++) {
+		nx[i] = -1;
+	}
 
- for (nf= -1,i= 0; i<n; i++)
-    if (nmark[i] == 0) {Ntab[i].nlink= nf; nf= i;}
-    else  /* restore num[i] */
-       {t= hashnum(Ntab[i].num);
-        while (nx[t]!=-1) if ((++t) == n) t= 0;
-        nx[t]= i; nmark[i]= 0;
-       }
+	for (nf = -1, i = 0; i < n; i++) {
+		if (nmark[i] == 0) {
+			Ntab[i].nlink = nf;
+			nf = i;
+		} else { /* restore num[i] */
+			t = hashnum(Ntab[i].num);
+			while (nx[t] != -1) {
+				if ((++t) == n) {
+					t = 0;
+				}
+			}
+			nx[t] = i;
+			nmark[i] = 0;
+		}
+	}
 
- /* Build the new list-node free-space list. */
- fp= -1; numf= 0;
- for (i=1; i<m; i++)
-     if (! marked(i)) {B(i)= fp; fp= i; numf++;} else unmark(i);
+	/* Build the new list-node free-space list. */
+	fp= -1;
+	numf= 0;
+	for (i = 1; i < m; i++) {
+		if (!marked(i)) {
+			B(i) = fp;
+			fp = i;
+			numf++;
+		} else {
+			unmark(i);
+		}
+	}
 }
 
 
