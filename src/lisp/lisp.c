@@ -551,24 +551,45 @@ fraction:		k = 1.0;
 /* Fill the buffer string pg (=pointer to g) if needed, and then remove and
    return the next character from the input. */
 char getgchar(void)
-{fillg(); return(*pg++);}
+{
+	fillg();
+	return (*pg++);
+}
 
 
 /* Fill the buffer string pg (=g) if needed, and then return a copy of
    the next character in the input, but don't advance pg. */
 char lookgchar(void)
-{fillg(); return(*pg);}
+{
+	fillg();
+	return (*pg);
+}
 
 
 /* Read a line into g[]. A line starting with a "/" is a comment line. */
 void fillg(void)
-{while (pg>=pge)
-   {sprompt: if (filep == stdin) {sprintf(sout,"%c",prompt); ourprint(sout);}
-    if (fgetline(g,200,filep)<0) return;
-    if (filep == stdin) {fprintf(logfilep,"%s\n",g); fflush(logfilep);}
-    if (*g == '/') goto sprompt;
-    pg= g; pge= g+strlen(g); *pge++= ' '; *pge= '\0'; prompt= '>';
-   }
+{
+	while (pg >= pge) {
+sprompt:	if (filep == stdin) {
+			sprintf(sout, "%c", prompt);
+			ourprint(sout);
+		}
+		if (fgetline(g, 200, filep) < 0) {
+			return;
+		}
+		if (filep == stdin) {
+			fprintf(logfilep, "%s\n", g);
+			fflush(logfilep);
+		}
+		if (*g == '/') {
+			goto sprompt;
+		}
+		pg = g;
+		pge = g + strlen(g);
+		*pge++ = ' ';
+		*pge = '\0';
+		prompt= '>';
+	}
 }
 
 
