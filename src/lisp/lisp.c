@@ -409,83 +409,142 @@ next:		if ((c = e()) <= 2) {
    or a negative typed-pointer to an entry in the atom table or the number
    table. */
 int32 e(void)
-{double v,f,k,sign;
- int32 t,c;
- char nc[50], *np;
- struct Insave *tb;
+{
+	double v, f, k, sign;
+	int32 t, c;
+	char nc[50], *np;
+	struct Insave *tb;
 
-#define OPENP '('
-#define CLOSEP ')'
-#define BLANK ' '
-#define SINGLEQ '\''
-#define DOT '.'
-#define PLUS '+'
-#define MINUS '-'
-#define CHVAL(c) (c-'0')
-#define DIGIT(c) ('0'<=(c) && (c)<='9')
-#define TOUPPER(c) ((c) + 'A'-'a')
-#define ISLOWER(c) ((c)>='a' && (c)<='z')
+#define OPENP      '('
+#define CLOSEP     ')'
+#define BLANK      ' '
+#define SINGLEQ    '\''
+#define DOT        '.'
+#define PLUS       '+'
+#define MINUS      '-'
+#define CHVAL(c)   (c-'0')
+#define DIGIT(c)   ('0' <= (c) && (c) <= '9')
+#define TOUPPER(c) ((c) + 'A' - 'a')
+#define ISLOWER(c) ((c) >= 'a' && (c) <= 'z')
 
- if (pb!=0) {t= pb; pb= 0; return(t);}
-
-start:
- while ((c= getgchar()) == BLANK);  /* Remove blanks. */
-
- if (c == OPENP)
-    {while (lookgchar() == BLANK) getgchar(); /* Remove blanks. */
-     if (lookgchar() == CLOSEP) {getgchar(); return(nilptr);} else return(1);
-    }
- if (c == EOS)
-    {if (topInsave == NULL) {fclose(logfilep); exit(0);}
-     /* Restore the previous input stream. */
-     fclose(filep);
-     strcpy(g,topInsave->g); pg= topInsave->pg; pge= topInsave->pge;
-     filep= topInsave->filep; topInsave= topInsave->link;
-     if (prompt == '@') prompt= '>';
-     goto start;
-    }
- if (c == SINGLEQ) return(2);
- if (c == CLOSEP) return(4);
- if (c == DOT)
-    {if (DIGIT(lookgchar())) {sign= 1.0; v= 0.0; goto fraction;} return(3);}
- if (! (DIGIT(c) || ((c == PLUS || c == MINUS) &&
-     (DIGIT(lookgchar()) || lookgchar() == DOT))))
-    {np= nc; *np++= c;    /* Put c in nc[0]. */
-     for (c= lookgchar();
-	  c!=BLANK && c!=DOT && c!=OPENP && c!=CLOSEP;
-	  c= lookgchar())
-	*(np++)= getgchar(); /* Add a character. */
-     *np= EOS; /* nc is now a string. */
-     if (*nc == '@')
-	{/* Switch input streams. */
-	 /* Save the current input stream. */
-	 tb= (struct Insave *)calloc(1,sizeof(struct Insave));
-         tb->link= topInsave; topInsave= tb;
-	 strcpy(tb->g,g); tb->pg= pg; tb->pge= pge; tb->filep= filep;
-
-	 /* Set up the new input stream. */
-         *g= EOS; pg= pge= g; prompt= '@';
-	 filep= fopen(nc+1,"r"); /* Skip over the @. */
-         if (filep == NULL) error("Cannot open @file!");
-         goto start;
+	if (pb != 0) {
+		t = pb;
+		pb = 0;
+		return (t);
 	}
-     /* Convert the string nc to upper case. */
-     for (np= nc; *np!=EOS; np++)
-	if (ISLOWER((int16)*np)) *np= (char)TOUPPER((int16)*np);
-     return(ordatom(nc));
-    }
- if (c == MINUS) {v= 0.0; sign= -1.0;} else {v= CHVAL(c); sign= 1.0;}
- while (DIGIT(lookgchar())) v= 10.0*v+CHVAL(getgchar());
- if (lookgchar() == DOT)
-    {getgchar();
-     if (DIGIT(lookgchar()))
-        {fraction:
-         k= 1.0; f= 0.0;
-	 do {k=10.*k;f=10.*f+CHVAL(getgchar());} while (DIGIT(lookgchar()));
-         v= v+f/k;
-        }
-    }
- return(numatom(sign*v));
+
+start:	while ((c = getgchar()) == BLANK) {
+		; /* Remove blanks. */
+	}
+
+	if (c == OPENP) {
+		while (lookgchar() == BLANK) {
+			getgchar(); /* Remove blanks. */
+		}
+		if (lookgchar() == CLOSEP) {
+			getgchar();
+			return (nilptr);
+		} else {
+			return (1);
+		}
+	}
+	if (c == EOS) {
+		if (topInsave == NULL) {
+			fclose(logfilep);
+			exit(0);
+		}
+		/* Restore the previous input stream. */
+		fclose(filep);
+		strcpy(g, topInsave->g);
+		pg = topInsave->pg;
+		pge = topInsave->pge;
+		filep = topInsave->filep;
+		topInsave = topInsave->link;
+		if (prompt == '@') {
+			prompt= '>';
+		}
+		goto start;
+	}
+	if (c == SINGLEQ) {
+		return (2);
+	}
+	if (c == CLOSEP) {
+		return (4);
+	}
+	if (c == DOT) {
+		if (DIGIT(lookgchar())) {
+			sign = 1.0;
+			v = 0.0;
+			goto fraction;
+		}
+		return (3);
+	}
+	if (!(DIGIT(c) ||
+	      ((c == PLUS || c == MINUS) &&
+	       (DIGIT(lookgchar()) || lookgchar() == DOT)))
+	) {
+		np = nc;
+		*np++= c; /* Put c in nc[0]. */
+		for (c = lookgchar();
+		     c != BLANK && c != DOT && c != OPENP && c != CLOSEP;
+		     c = lookgchar()
+		) {
+			*(np++) = getgchar(); /* Add a character. */
+		}
+		*np = EOS; /* nc is now a string. */
+		if (*nc == '@') {
+			/* Switch input streams. */
+			/* Save the current input stream. */
+			tb = (struct Insave *)calloc(1, sizeof(struct Insave));
+			tb->link = topInsave;
+			topInsave = tb;
+			strcpy(tb->g, g);
+			tb->pg = pg;
+			tb->pge = pge;
+			tb->filep = filep;
+
+			/* Set up the new input stream. */
+			*g = EOS;
+			pg = pge = g;
+			prompt= '@';
+			filep= fopen(nc + 1, "r"); /* Skip over the @. */
+			if (filep == NULL) {
+				error("Cannot open @file!");
+			}
+			goto start;
+		}
+
+		/* Convert the string nc to upper case. */
+		for (np = nc; *np != EOS; np++) {
+			if (ISLOWER((int16)*np)) {
+				*np = (char)TOUPPER((int16)*np);
+			}
+		}
+		return(ordatom(nc));
+	}
+	if (c == MINUS) {
+		v = 0.0;
+		sign = -1.0;
+	} else {
+		v = CHVAL(c);
+		sign = 1.0;
+	}
+	while (DIGIT(lookgchar())) {
+		v = 10.0 * v + CHVAL(getgchar());
+	}
+	if (lookgchar() == DOT) {
+		getgchar();
+		if (DIGIT(lookgchar())) {
+fraction:		k = 1.0;
+			f = 0.0;
+			do {
+				k = 10. * k;
+				f = 10. * f + CHVAL(getgchar());
+			} while (DIGIT(lookgchar()));
+			v = v + f / k;
+		}
+	}
+	return (numatom(sign * v));
 }
 
 
