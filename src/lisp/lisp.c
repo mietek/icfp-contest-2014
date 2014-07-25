@@ -622,18 +622,33 @@ int16 fgetline(char *s, int16 lim, FILE *stream)
    number atom if it is not already present.  The typed-pointer to this number
    atom is returned. */
 int32 numatom(double r)
-{int32 j;
+{
+	int32 j;
 
-#define hashnum(r) ((*(1+(int32 *)(&r)) & 0x7fffffff) % n)
+#define hashnum(r) ((*(1 + (int32 *)(&r)) & 0x7fffffff) % n)
 
- j= hashnum(r);
+	j = hashnum(r);
 
- while (nx[j]!=-1)
-    if (Ntab[nx[j]].num == r) {j= nx[j]; goto ret;} else if (++j == n) j= 0;
+	while (nx[j] != -1) {
+		if (Ntab[nx[j]].num == r) {
+			j = nx[j];
+			goto ret;
+		} else if (++j == n) {
+			j = 0;
+		}
+	}
 
- if (nf<0) {gc(); if (nf<0) error("The number table is full");}
- nx[j]= nf; j= nf; nf= Ntab[nf].nlink; Ntab[j].num= r;
-ret: return(nu(j));
+	if (nf < 0) {
+		gc();
+		if (nf < 0) {
+			error("The number table is full");
+		}
+	}
+	nx[j] = nf;
+	j = nf;
+	nf = Ntab[nf].nlink;
+	Ntab[j].num = r;
+ret:	return (nu(j));
 }
 
 
