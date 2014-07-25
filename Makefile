@@ -6,7 +6,7 @@ build: build/lisp
 
 build/lisp: src/lisp/lisp.c
 	@mkdir -p build
-	gcc -Wall -O2 -o build/lisp src/lisp/lisp.c
+	gcc -Wall -O2 -o build/lisp -std=c99 src/lisp/lisp.c
 	cp src/lisp/lispinit build/lispinit
 
 run: build/lisp
