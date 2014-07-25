@@ -20,7 +20,6 @@ and turned off with the directive "!notrace".
 
 #define int16 int
 #define int32 int
-#define forward extern
 
 #include <math.h>
 #include <setjmp.h>
@@ -124,22 +123,22 @@ FILE *filep;
 FILE *logfilep;
 
 /* forward references */
-forward int32 seval(int32 i);
-forward void initlisp(void);
-forward int32 sread(void);
-forward void swrite(int32 i);
-forward int32 newloc(int32 x, int32 y);
-forward int32 numatom (double r);
-forward int32 ordatom (char *s);
-forward void gc(void);
-forward void gcmark(int32 p);
-forward char getgchar(void);
-forward char lookgchar(void);
-forward void fillg(void);
-forward int32 e(void);
-forward void error(char *s);
-forward int16 fgetline(char *s, int16 lim, FILE *stream);
-forward void ourprint(char *s);
+int32 seval(int32 i);
+void initlisp(void);
+int32 sread(void);
+void swrite(int32 i);
+int32 newloc(int32 x, int32 y);
+int32 numatom (double r);
+int32 ordatom (char *s);
+void gc(void);
+void gcmark(int32 p);
+char getgchar(void);
+char lookgchar(void);
+void fillg(void);
+int32 e(void);
+void error(char *s);
+int16 fgetline(char *s, int16 lim, FILE *stream);
+void ourprint(char *s);
 
 
 void spacerpt(int32 r)
