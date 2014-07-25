@@ -1318,20 +1318,36 @@ void gc(void)
 
 /* Mark the S-expression given by the typed-pointer p. */
 void gcmark(int32 p)
-{static int32 s,t;
+{
+	static int32 s, t;
 
-#define marknum(t,p)   if ((t) == 9) nmark[ptrv(p)]= 1
-#define listp(t)       ((t) == 0 || (t)>11)
+#define marknum(t, p) if ((t) == 9) nmark[ptrv(p)] = 1
+#define listp(t)      ((t) == 0 || (t) > 11)
 
 start:
- t= type(p);
- if (listp(t))
-    {p=ptrv(p); if (marked(p)) return; t=A(p); marknode(p);
-     if (! listp(type(t))) {marknum(type(t),t); p=B(p); goto start;}
-     s=B(p);
-     if (! listp(type(s))) {marknum(type(s),s); p=t; goto start;}
-     gcmark(t);
-     p=B(p); goto start; /* Equivalent to the recursive call: gcmark(B(p)) */
-    }
-   else marknum(t,p);
+	t = type(p);
+	if (listp(t)) {
+		p = ptrv(p);
+		if (marked(p)) {
+			return;
+		}
+		t = A(p);
+		marknode(p);
+		if (!listp(type(t))) {
+			marknum(type(t), t);
+			p = B(p);
+			goto start;
+		}
+		s = B(p);
+		if (!listp(type(s))) {
+			marknum(type(s), s);
+			p = t;
+			goto start;
+		}
+		gcmark(t);
+		p = B(p);
+		goto start; /* Equivalent to the recursive call: gcmark(B(p)) */
+	} else {
+		marknum(t, p);
+	}
 }
