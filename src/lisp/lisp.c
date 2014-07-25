@@ -153,18 +153,25 @@ void ourprint(char *s);
    We are to protect r from garbage-collection.
    This function can be called from within the main loop. */
 void spacerpt(int32 r)
-{char s[60];
- int16 t;
+{
+	char s[60];
+	int16 t;
 
- sprintf(s,"entering spacerpt: r=%x, numf=%d\n", r, numf); ourprint(s);
+	sprintf(s,"entering spacerpt: r=%x, numf=%d\n", r, numf); ourprint(s);
 
- t = type(r);
- if (namedfsf(t)) r = ptrv(Atab[ptrv(r)].L); /* Dereference r. */
- if (builtin(t)) r = nilptr; /* Do not try to mark a builtin. */
- gcmark(r);
- gc();
+	t = type(r);
+	if (namedfsf(t)) {
+		/* Dereference r. */
+		r = ptrv(Atab[ptrv(r)].L);
+	}
+	if (builtin(t)) {
+		/* Do not try to mark a builtin. */
+		r = nilptr;
+	}
+	gcmark(r);
+	gc();
 
- sprintf(s,"leaving spacerpt: numf=%d\n", numf); ourprint(s);
+	sprintf(s,"leaving spacerpt: numf=%d\n", numf); ourprint(s);
 }
 
 
