@@ -23,16 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if !defined(NULL)
-#  define NULL 0L
-#endif
 #define EOF (-1)
 #define EOS (0)
-
-#define EQ ==
-#define OR ||
-#define AND &&
-#define NOT !
 
 /* Size of Atom and Number tables. */
 #define n 1000
@@ -99,14 +91,14 @@ int32 numf;
 
 #define type(f)        (((f)>>28) & 0xf)
 #define ptrv(f)        (0x0fffffff & (f))
-#define sexp(t)        ((t) EQ 0 OR (t) EQ 8 OR (t) EQ 9)
+#define sexp(t)        ((t) == 0 || (t) == 8 || (t) == 9)
 #define fctform(t)     ((t)>9)
-#define builtin(t)     ((t) EQ 10 OR (t) EQ 11)
-#define userdefd(t)    ((t) EQ 12 OR (t) EQ 13)
-#define dottedpair(t)  ((t) EQ 0)
-#define fct(t)         ((t) EQ 10 OR (t) EQ 12 OR (t) EQ 14)
+#define builtin(t)     ((t) == 10 || (t) == 11)
+#define userdefd(t)    ((t) == 12 || (t) == 13)
+#define dottedpair(t)  ((t) == 0)
+#define fct(t)         ((t) == 10 || (t) == 12 || (t) == 14)
 #define unnamedfsf(t)  ((t)>13)
-#define namedfsf(t)    ((t)>9 AND (t)<14)
+#define namedfsf(t)    ((t)>9 && (t)<14)
 #define tp(t,j)        ((t) | (j))
 #define ud(j)          (0x10000000 | (j))
 #define se(j)          (0x00000000 | (j))
@@ -297,13 +289,13 @@ int32 sread(void)
 
  if ((c= e())<=0) return(c);
 
- if (c EQ 1) { if ((k= e()) EQ 4) return(nilptr); else pb= k; }
+ if (c == 1) { if ((k= e()) == 4) return(nilptr); else pb= k; }
  /* To permit recursion, skp is a list of lists. */
  skp= newloc(nilptr,skp);
  A(skp)= j= k= newloc(nilptr,nilptr);
 
  /* We will return k, but we will fill node j first. */
- if (c EQ 1)
+ if (c == 1)
     {scan: A(j)= sread();
      next: if ((c= e())<=2)
               {t= newloc(nilptr,nilptr); B(j)= t; j= t;
@@ -313,7 +305,7 @@ int32 sread(void)
      if (c!=4) {B(j)= sread(); if (e()!=4) error("syntax error");}
      skp= B(skp); return(k);
     }
- if (c EQ 2)
+ if (c == 2)
     {A(j)= quoteptr; B(j)= t= newloc(nilptr,nilptr); A(t)= sread();
      skp= B(skp); return(k);
     }
@@ -344,41 +336,41 @@ int32 e(void)
 #define PLUS '+'
 #define MINUS '-'
 #define CHVAL(c) (c-'0')
-#define DIGIT(c) ('0'<=(c) AND (c)<='9')
+#define DIGIT(c) ('0'<=(c) && (c)<='9')
 #define TOUPPER(c) ((c) + 'A'-'a')
-#define ISLOWER(c) ((c)>='a' AND (c)<='z')
+#define ISLOWER(c) ((c)>='a' && (c)<='z')
 
  if (pb!=0) {t= pb; pb= 0; return(t);}
 
 start:
- while ((c= getgchar()) EQ BLANK);  /* Remove blanks. */
+ while ((c= getgchar()) == BLANK);  /* Remove blanks. */
 
- if (c EQ OPENP)
-    {while (lookgchar() EQ BLANK) getgchar(); /* Remove blanks. */
-     if (lookgchar() EQ CLOSEP) {getgchar(); return(nilptr);} else return(1);
+ if (c == OPENP)
+    {while (lookgchar() == BLANK) getgchar(); /* Remove blanks. */
+     if (lookgchar() == CLOSEP) {getgchar(); return(nilptr);} else return(1);
     }
- if (c EQ EOS)
-    {if (topInsave EQ NULL) {fclose(logfilep); exit(0);}
+ if (c == EOS)
+    {if (topInsave == NULL) {fclose(logfilep); exit(0);}
      /* Restore the previous input stream. */
      fclose(filep);
      strcpy(g,topInsave->g); pg= topInsave->pg; pge= topInsave->pge;
      filep= topInsave->filep; topInsave= topInsave->link;
-     if (prompt EQ '@') prompt= '>';
+     if (prompt == '@') prompt= '>';
      goto start;
     }
- if (c EQ SINGLEQ) return(2);
- if (c EQ CLOSEP) return(4);
- if (c EQ DOT)
+ if (c == SINGLEQ) return(2);
+ if (c == CLOSEP) return(4);
+ if (c == DOT)
     {if (DIGIT(lookgchar())) {sign= 1.0; v= 0.0; goto fraction;} return(3);}
- if (NOT (DIGIT(c) OR ((c EQ PLUS OR c EQ MINUS) AND
-     (DIGIT(lookgchar()) OR lookgchar() EQ DOT))))
+ if (! (DIGIT(c) || ((c == PLUS || c == MINUS) &&
+     (DIGIT(lookgchar()) || lookgchar() == DOT))))
     {np= nc; *np++= c;    /* Put c in nc[0]. */
      for (c= lookgchar();
-	  c!=BLANK AND c!=DOT AND c!=OPENP AND c!=CLOSEP;
+	  c!=BLANK && c!=DOT && c!=OPENP && c!=CLOSEP;
 	  c= lookgchar())
 	*(np++)= getgchar(); /* Add a character. */
      *np= EOS; /* nc is now a string. */
-     if (*nc EQ '@')
+     if (*nc == '@')
 	{/* Switch input streams. */
 	 /* Save the current input stream. */
 	 tb= (struct Insave *)calloc(1,sizeof(struct Insave));
@@ -388,7 +380,7 @@ start:
 	 /* Set up the new input stream. */
          *g= EOS; pg= pge= g; prompt= '@';
 	 filep= fopen(nc+1,"r"); /* Skip over the @. */
-         if (filep EQ NULL) error("Cannot open @file!");
+         if (filep == NULL) error("Cannot open @file!");
          goto start;
 	}
      /* Convert the string nc to upper case. */
@@ -396,9 +388,9 @@ start:
 	if (ISLOWER((int16)*np)) *np= (char)TOUPPER((int16)*np);
      return(ordatom(nc));
     }
- if (c EQ MINUS) {v= 0.0; sign= -1.0;} else {v= CHVAL(c); sign= 1.0;}
+ if (c == MINUS) {v= 0.0; sign= -1.0;} else {v= CHVAL(c); sign= 1.0;}
  while (DIGIT(lookgchar())) v= 10.0*v+CHVAL(getgchar());
- if (lookgchar() EQ DOT)
+ if (lookgchar() == DOT)
     {getgchar();
      if (DIGIT(lookgchar()))
         {fraction:
@@ -426,10 +418,10 @@ char lookgchar(void)
 /* Read a line into g[]. A line starting with a "/" is a comment line. */
 void fillg(void)
 {while (pg>=pge)
-   {sprompt: if (filep EQ stdin) {sprintf(sout,"%c",prompt); ourprint(sout);}
+   {sprompt: if (filep == stdin) {sprintf(sout,"%c",prompt); ourprint(sout);}
     if (fgetline(g,200,filep)<0) return;
-    if (filep EQ stdin) {fprintf(logfilep,"%s\n",g); fflush(logfilep);}
-    if (*g EQ '/') goto sprompt;
+    if (filep == stdin) {fprintf(logfilep,"%s\n",g); fflush(logfilep);}
+    if (*g == '/') goto sprompt;
     pg= g; pge= g+strlen(g); *pge++= ' '; *pge= '\0'; prompt= '>';
    }
 }
@@ -442,10 +434,10 @@ void fillg(void)
 int16 fgetline(char *s, int16 lim, FILE *stream)
 {int16 c,i;
 #define TAB 9
- for (i=0; i<lim AND (c=fgetc(stream))!=EOF AND c!='\n'; ++i)
-    {if (c EQ TAB) c= BLANK; s[i]= c;}
+ for (i=0; i<lim && (c=fgetc(stream))!=EOF && c!='\n'; ++i)
+    {if (c == TAB) c= BLANK; s[i]= c;}
  s[i]= '\0';
- if (c EQ EOF AND i EQ 0) return(-1); else return(i);
+ if (c == EOF && i == 0) return(-1); else return(i);
 }
 
 
@@ -460,7 +452,7 @@ int32 numatom(double r)
  j= hashnum(r);
 
  while (nx[j]!=-1)
-    if (Ntab[nx[j]].num EQ r) {j= nx[j]; goto ret;} else if (++j EQ n) j= 0;
+    if (Ntab[nx[j]].num == r) {j= nx[j]; goto ret;} else if (++j == n) j= 0;
 
  if (nf<0) {gc(); if (nf<0) error("The number table is full");}
  nx[j]= nf; j= nf; nf= Ntab[nf].nlink; Ntab[j].num= r;
@@ -482,7 +474,7 @@ int32 ordatom (char *s)
 
 // DEBUG(printf("ordatom: `%s' hashes to %d. k=%d, n=%d\n",s,j,k,n););
  while (Atab[j].name[0]!=EOS)
-    {if (strcmp(Atab[j].name,s) EQ 0) goto ret;
+    {if (strcmp(Atab[j].name,s) == 0) goto ret;
      else if (++j >= n) {j= 0; if (++c>1) error("atom table is full");}
     }
 
@@ -500,11 +492,11 @@ void swrite(int32 j)
  switch (type(j))
     {case 0: /* check for a list */
         j= i;
-        while (type(B(j)) EQ 0) j= B(j);
-        listsw= (B(j) EQ nilptr);
+        while (type(B(j)) == 0) j= B(j);
+        listsw= (B(j) == nilptr);
         ourprint("(");
         while (listsw)
-	   {swrite(A(i)); if ((i= B(i)) EQ nilptr) goto close; ourprint(" ");}
+	   {swrite(A(i)); if ((i= B(i)) == nilptr) goto close; ourprint(" ");}
         swrite(A(i)); ourprint(" . "); swrite(B(i));
 close:  ourprint(")");
         break;
@@ -531,7 +523,7 @@ void traceprint(int32 v, int16 osw)
 /* int32 v; the object to be printed,
    int16 osw; 1 for seval() output, 0 for seval() input. */
 {if (tracesw>0)
-    {if (osw EQ 1) sprintf(sout,"%d result:",ct--);
+    {if (osw == 1) sprintf(sout,"%d result:",ct--);
      else sprintf(sout,"%d seval:",++ct);
      ourprint(sout); swrite(v); ourprint("\n");
     }
@@ -578,10 +570,10 @@ int32 seval(int32 p)
     /* The association list is implemented with shallow binding in the atom-
        table, so the current values of all atoms are found in the atom table. */
 
-    if (Atab[j].name[0] EQ '!')
-       {tracesw= (strcmp(Atab[j].name,"!TRACE") EQ 0)?1:0; longjmp(env,-1);}
+    if (Atab[j].name[0] == '!')
+       {tracesw= (strcmp(Atab[j].name,"!TRACE") == 0)?1:0; longjmp(env,-1);}
 
-    if ((t= type(Atab[j].L)) EQ 1)
+    if ((t= type(Atab[j].L)) == 1)
        {sprintf(sout,"%s is undefined\n",Atab[j].name); error(sout);}
 
     if (namedfsf(t)) Return(tp(t<<28,j));
@@ -596,8 +588,8 @@ int32 seval(int32 p)
 
  /* Compute the function or special form to be applied. */
  tracesw-- ; f= seval(A(p)); tracesw++; ty= type(f);
- if (NOT fctform(ty)) error(" invalid function or special form");
- f= ptrv(f); if (NOT unnamedfsf(ty)) f= ptrv(Atab[f].L);
+ if (! fctform(ty)) error(" invalid function or special form");
+ f= ptrv(f); if (! unnamedfsf(ty)) f= ptrv(Atab[f].L);
 
  /* Now let go of the supplied input function. */
  A(cilp)= p= B(p);
@@ -622,9 +614,9 @@ int32 seval(int32 p)
     }
 
  /* At this point p points to the first node of the actual argument
-    list.  if p EQ nilptr, we have a function or special form with no
+    list.  if p == nilptr, we have a function or special form with no
     arguments */
- if (NOT builtin(ty))
+ if (! builtin(ty))
     {/* f is a non-builtin function or non-builtin special form.  do
         shallow binding of the arguments and evaluate the body of f by
         calling seval. */
@@ -633,7 +625,7 @@ int32 seval(int32 p)
      /* Run through the arguments and place them as the top values of
 	the formal argument atoms in the atom-table.  Push the old
 	value of each formal argument on its binding list. */
-     if (type(fa) EQ 8 AND fa != nilptr)
+     if (type(fa) == 8 && fa != nilptr)
         {/* This will bind the entire input actual arglist as the
             single actual arg.  Sometimes, it is wrong - we should
             dereference the named fsf's in the p list, first. */
@@ -643,7 +635,7 @@ int32 seval(int32 p)
          goto apply;
         }
      else
-	while (p!=nilptr AND dottedpair(type(fa)))
+	while (p!=nilptr && dottedpair(type(fa)))
            {t= ptrv(A(fa)); fa= B(fa);
             Atab[t].bl= newloc(Atab[t].L,Atab[t].bl);
             v= A(p); if (namedfsf(type(v))) v= Atab[ptrv(v)].L;
@@ -659,7 +651,7 @@ int32 seval(int32 p)
 
      /* Now unbind the actual arguments. */
      fa= A(f);
-     if (type(fa) EQ 8 AND fa != nilptr)
+     if (type(fa) == 8 && fa != nilptr)
         {t= ptrv(fa); Atab[t].L= A(Atab[t].bl); Atab[t].bl= B(Atab[t].bl);}
      else
         while (na-- > 0)
@@ -676,13 +668,13 @@ int32 seval(int32 p)
      v= nilptr;
      switch (f) /* Begin builtins. */
      {case 1: /* CAR */
-         if (NOT dottedpair(type(E1))) error("illegal CAR argument");
+         if (! dottedpair(type(E1))) error("illegal CAR argument");
          v= A(E1); break;
       case 2: /* CDR */
-         if (NOT dottedpair(type(E1))) error("illegal CDR argument");
+         if (! dottedpair(type(E1))) error("illegal CDR argument");
          v= B(E1); break;
       case 3: /* CONS */
-         if (sexp(type(E1)) AND sexp(type(E2))) v= newloc(E1,E2);
+         if (sexp(type(E1)) && sexp(type(E2))) v= newloc(E1,E2);
          else error("Illegal CONS arguments");
          break;
 
@@ -713,10 +705,10 @@ doit:    t= seval(U2);
          tracesw--; v= seval(f); tracesw++; break;
 
       case 7: /* ATOM */
-         if ((type(E1)) EQ 8 OR (type(E1)) EQ 9) v= tptr; break;
+         if ((type(E1)) == 8 || (type(E1)) == 9) v= tptr; break;
 
       case 8: /* NUMBERP */
-         if (type(E1) EQ 9) v= tptr; break;
+         if (type(E1) == 9) v= tptr; break;
 
       case 9: /* QUOTE */ v= U1; break;
       case 10: /* LIST */ v= p; break;
@@ -754,15 +746,15 @@ doit:    t= seval(U2);
          if (Ntab[ptrv(E1)].num>Ntab[ptrv(E2)].num) v= tptr; break;
 
       case 22: /* EVAL */ v= seval(E1); break;
-      case 23: /* EQ */ v= (E1 EQ E2) ? tptr : nilptr; break;
+      case 23: /* EQ */ v= (E1 == E2) ? tptr : nilptr; break;
 
       case 24: /* AND */
-         while (p!=nilptr AND seval(A(p))!=nilptr) p= B(p);
-         if (p EQ nilptr) v= tptr;  /* else v remains nilptr */
+         while (p!=nilptr && seval(A(p))!=nilptr) p= B(p);
+         if (p == nilptr) v= tptr;  /* else v remains nilptr */
          break;
 
       case 25: /* OR */
-         while (p!=nilptr AND seval(A(p)) EQ nilptr) p= B(p);
+         while (p!=nilptr && seval(A(p)) == nilptr) p= B(p);
          if (p!=nilptr) v= tptr;  /* else v remains nilptr */
          break;
 
@@ -778,12 +770,12 @@ doit:    t= seval(U2);
       case 29: /* GETPLIST */ v= Atab[ptrv(E1)].plist; break;
       case 30: /* READ */ ourprint("\n!"); prompt= EOS; v= sread(); break;
       case 31: /* PRINT */
-         if (p EQ nilptr) ourprint(" ");
+         if (p == nilptr) ourprint(" ");
          else while (p!=nilptr) {swrite(A(p)); ourprint(" "); p= B(p);}
          break;
 
       case 32: /* PRINTCR */
-         if (p EQ nilptr) ourprint("\n");
+         if (p == nilptr) ourprint("\n");
          else while (p!=nilptr) {swrite(A(p)); ourprint("\n"); p= B(p);}
          break;
 
@@ -799,22 +791,22 @@ doit:    t= seval(U2);
 
       case 35: /* RPLACA */
 	 v= E1;
-	 if (NOT dottedpair(type(v))) error("illegal RPLACA argument");
+	 if (! dottedpair(type(v))) error("illegal RPLACA argument");
 	 A(v)= E2; break;
 
       case 36: /* RPLACD */
          v= E1;
-         if (NOT dottedpair(type(v))) error("illegal RPLACD argument");
+         if (! dottedpair(type(v))) error("illegal RPLACD argument");
          B(v)= E2; break;
 
       case 37: /* TSETQ */
 	/* Set the top-level value of U1 to seval(U2).*/
-	 if (Atab[f= ptrv(U1)].bl EQ nilptr) goto assign;
+	 if (Atab[f= ptrv(U1)].bl == nilptr) goto assign;
 	 v= Atab[f].bl; while (B(v)!=nilptr) v= B(v);
 	 endeaL= &A(v); goto doit;
 
       case 38: /* NULL */
-         if (E1 EQ nilptr) v= tptr; break;
+         if (E1 == nilptr) v= tptr; break;
 
       case 39:  /* SET */
 	 f= seval(U1); goto assign;
@@ -855,17 +847,17 @@ void gc(void)
  for (i= 0; i<n; i++) nx[i]= -1;
 
  for (nf= -1,i= 0; i<n; i++)
-    if (nmark[i] EQ 0) {Ntab[i].nlink= nf; nf= i;}
+    if (nmark[i] == 0) {Ntab[i].nlink= nf; nf= i;}
     else  /* restore num[i] */
        {t= hashnum(Ntab[i].num);
-        while (nx[t]!=-1) if ((++t) EQ n) t= 0;
+        while (nx[t]!=-1) if ((++t) == n) t= 0;
         nx[t]= i; nmark[i]= 0;
        }
 
  /* build the new list-node free-space list */
  fp= -1; numf= 0;
  for (i=1; i<m; i++)
-     if (NOT marked(i)) {B(i)= fp; fp= i; numf++;} else unmark(i);
+     if (! marked(i)) {B(i)= fp; fp= i; numf++;} else unmark(i);
 }
 
 
@@ -873,16 +865,16 @@ void gc(void)
 void gcmark(int32 p)
 {static int32 s,t;
 
-#define marknum(t,p)   if ((t) EQ 9) nmark[ptrv(p)]= 1
-#define listp(t)       ((t) EQ 0 OR (t)>11)
+#define marknum(t,p)   if ((t) == 9) nmark[ptrv(p)]= 1
+#define listp(t)       ((t) == 0 || (t)>11)
 
 start:
  t= type(p);
  if (listp(t))
     {p=ptrv(p); if (marked(p)) return; t=A(p); marknode(p);
-     if (NOT listp(type(t))) {marknum(type(t),t); p=B(p); goto start;}
+     if (! listp(type(t))) {marknum(type(t),t); p=B(p); goto start;}
      s=B(p);
-     if (NOT listp(type(s))) {marknum(type(s),s); p=t; goto start;}
+     if (! listp(type(s))) {marknum(type(s),s); p=t; goto start;}
      gcmark(t);
      p=B(p); goto start; /* Equivalent to the recursive call: gcmark(B(p)) */
     }
