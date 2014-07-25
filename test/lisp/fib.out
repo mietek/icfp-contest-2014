@@ -1,0 +1,21 @@
+ENTERING THE LISP INTERPRETER
+
+{user defined function: APPEND}
+{user defined function: REVERSE}
+{user defined function: EQUAL}
+{builtin function: NOT}
+{user defined function: MEMBER}
+{user defined function: INTO}
+{user defined function: ONTO}
+{user defined special form: APPLY}
+{user defined function: SORT}
+{user defined function: MERGE}
+{user defined function: GETPROP}
+{user defined function: ASSOC}
+{user defined function: PUTPROP}
+{user defined function: REMPROP}
+{user defined function: NAX}
+{user defined function: NX}
+*>>{user defined function: FIB-REC}
+*>987
+*

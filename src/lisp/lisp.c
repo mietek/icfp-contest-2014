@@ -260,7 +260,7 @@ void initlisp(void)
 
  /* Open the logfile. */
  logfilep= fopen("lisp.log","w");
- ourprint(" ENTERING THE LISP INTERPRETER \n");
+ ourprint("ENTERING THE LISP INTERPRETER\n");
 
  /* Establish the input buffer and the input stream stack. */
  topInsave= NULL;
