@@ -1,0 +1,24 @@
+LDC 0          ; initial state
+LDF 4          ; load step function
+CONS
+RTN
+
+; STEP FUNCTION
+LD 0 1         ; load world state
+CDR            ; extract lambda-man status
+CAR            ;       -||-
+CDR            ; extract lambda-man position
+CAR            ;       -||-
+CAR            ; extract x value
+LDC 13         ; test whether its greater than 13
+CGT            ;       -||-
+TSEL 13 17     ; and select the right behaviour
+
+LDC 0
+LDC 3          ; go left
+CONS
+RTN
+
+LDC 0
+LDC 1          ; or go right
+RTN

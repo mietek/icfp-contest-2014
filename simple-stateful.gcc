@@ -1,0 +1,16 @@
+LDC 4          ; initial state
+LDF 4          ; load step function
+CONS
+RTN
+; STEP FUNCTION
+LD 0 0         ; push current state (steps counter)
+LD 0 0         ; need to keep another copy to use later
+TSEL 7 12      ; jump depending on the steps count
+LDC 1
+SUB            ; decrementing steps count
+LDC 1          ; and going right
+CONS
+RTN
+LDC 2          ; just go down
+CONS
+RTN

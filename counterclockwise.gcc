@@ -1,0 +1,67 @@
+LDC 0          ; initial state
+LDC 0
+CONS
+LDF 6          ; load step function
+CONS
+RTN
+
+; STEP FUNCTION
+LD 0 1         ; load world state
+CDR            ; lambda-man status
+CAR            ;       -||-
+CDR            ; lm position
+CAR            ;       -||-
+
+LD 0 1         ; load world state
+CDR            ; extract lman
+CAR
+CDR
+CDR
+CAR            ; extract direction
+
+LD 0 1         ; load world state
+CDR            ; extract lambda-man status
+CAR            ;
+CDR            ; extract lambda-man position
+CAR            ;
+LD 0 0         ; load last position
+LDF 45         ; call compare-two-pairs
+AP 2
+LDF 29         ; call new-direction
+AP 2
+CONS           ; return (curr_pos, new_dir)
+RTN
+
+; NEW-DIRECTION: changes direction if stuck
+LD 0 0         ; old direction
+LD 0 1         ; is it stuck?
+TSEL 32 34
+LDF 35         ; call rotate
+AP 1
+RTN
+
+; ROTATE: change direction counter-clockwise
+LD 0 0         ; previous direction
+LDC 0
+CEQ            ; if 0, set it to 3
+TSEL 39 41
+LDC 3
+RTN
+LD 0 0         ; if not, just subtract 1
+LDC 1
+SUB
+RTN
+
+; COMPARE-TWO-PAIRS
+LD 0 0
+CAR
+LD 0 1
+CAR
+CEQ
+LD 0 0
+CDR
+LD 0 1
+CDR
+CEQ
+MUL            ; MUL = AND
+RTN
