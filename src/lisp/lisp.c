@@ -225,7 +225,12 @@ void error(char *msg)
 
 /* Print the string s to the terminal, and also in the logfile, lisp.log */
 void ourprint(char *s)
-{printf("%s",s); fflush(stdout); fprintf(logfilep,"%s",s); fflush(logfilep);}
+{
+	printf("%s", s);
+	fflush(stdout);
+	fprintf(logfilep, "%s", s);
+	fflush(logfilep);
+}
 
 
 /* This procedure installs all builtin functions and special forms into
