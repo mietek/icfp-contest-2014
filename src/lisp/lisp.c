@@ -598,12 +598,23 @@ sprompt:	if (filep == stdin) {
    are no characters but just EOF, it returns -1 (EOF) as the length. There is
    no deblanking except to drop CR's and LF's ('\n') and map TABs to blanks. */
 int16 fgetline(char *s, int16 lim, FILE *stream)
-{int16 c,i;
+{
+	int16 c, i;
+
 #define TAB 9
- for (i=0; i<lim && (c=fgetc(stream))!=EOF && c!='\n'; ++i)
-    {if (c == TAB) c= BLANK; s[i]= c;}
- s[i]= '\0';
- if (c == EOF && i == 0) return(-1); else return(i);
+
+	for (i = 0; i < lim && (c = fgetc(stream)) != EOF && c != '\n'; ++i) {
+		if (c == TAB) {
+			c = BLANK;
+		}
+		s[i] = c;
+	}
+	s[i] = '\0';
+	if (c == EOF && i == 0) {
+		return (-1);
+	} else {
+		return (i);
+	}
 }
 
 
