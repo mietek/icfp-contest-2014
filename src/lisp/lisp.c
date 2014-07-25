@@ -1,5 +1,4 @@
-/* Filename:  ~\lisp\lisp.c            Revision Date: July 23, 2007 */
-/*****************************************************************************
+/*
 
                         LISP  INTERPRETER
                         -----------------
@@ -17,7 +16,7 @@ input text is taken from a file Z to replace the directive of the form
 "@Z".  SEVAL tracing can be turned on by using the directive "!trace",
 and turned off with the directive "!notrace".
 
-*****************************************************************************/
+*/
 
 #define int16 int
 #define int32 int
@@ -28,11 +27,6 @@ and turned off with the directive "!notrace".
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-/* The above includes declare strlen(), strcpy(), strcmp(), calloc(),
-   fflush(), fopen(), fclose(), fprintf(), sprintf(), fgetc(), labs(),
-   floor(), and pow().  Also the type FILE is defined, and the longjump
-   register-save structure template: jmp_buf is defined. This include will
-   need to be constructed to conform to  any particular system. */
 
 #if !defined(NULL)
 #  define NULL 0L
@@ -58,7 +52,6 @@ struct Atomtable {char name[16]; int32 L; int32 bl; int32 plist;} Atab[n];
 /* The number table is used for storing floating point numbers.  The
    field nlink is used for linking number table nodes on the number
    table free space list. */
-
 union Numbertable {double num; int16 nlink;} Ntab[n];
 
 /* the number hash index table */
@@ -101,7 +94,6 @@ int32 nilptr,tptr,currentin,eaL,quoteptr,sk,traceptr;
 int32 numf;
 
 /* define global macros */
-
 #define A(j)           P[j].car
 #define B(j)           P[j].cdr
 
@@ -150,14 +142,12 @@ forward int16 fgetline(char *s, int16 lim, FILE *stream);
 forward void ourprint(char *s);
 
 
-
-/*==========================================================================*/
 void spacerpt(int32 r)
-/*---------------------------------------------------------------------------
+/*
   For debugging to see if we are leaking list-nodes.
   We are to protect r from garbage-collection.
   This function can be called from within the main loop.
-----------------------------------------------------------------------------*/
+*/
 {char s[60];
  int16 t;
 
@@ -173,11 +163,10 @@ void spacerpt(int32 r)
 }
 
 
-/*==========================================================================*/
 int main(void)
-/*---------------------------------------------------------------------------
+/*
  Here is the main read/eval/print loop.
-----------------------------------------------------------------------------*/
+*/
 {int32 r;
 
  initlisp();
@@ -193,12 +182,12 @@ int main(void)
           }
 }
 
-/*==========================================================================*/
+
 void error(char *msg)
 /* char  *msg;   message to type out */
-/*---------------------------------------------------------------------------
+/*
  Type-out the message msg and do longjmp() to top level
-----------------------------------------------------------------------------*/
+*/
 {int32 i,t;
 
  /* discard all input S-expression and argument list stacks */
@@ -212,20 +201,20 @@ void error(char *msg)
  longjmp(env,-1);
 }
 
-/*=========================================================================*/
+
 void ourprint(char *s)
 /* char *s; message to be typed out and logged */
-/*--------------------------------------------------------------------------
+/*
  Print the string s to the terminal, and also in the logfile, lisp.log
- --------------------------------------------------------------------------*/
+*/
 {printf("%s",s); fflush(stdout); fprintf(logfilep,"%s",s); fflush(logfilep);}
 
-/*=========================================================================*/
+
 void initlisp(void)
-/*---------------------------------------------------------------------------
+/*
  This procedure installs all builtin functions and special forms into
  the atom table.  It also initializes the number table and list area.
- --------------------------------------------------------------------------*/
+*/
 {int32 i;
 
  static char *BI[]=
@@ -300,9 +289,9 @@ void initlisp(void)
  filep= stdin;
 }
 
-/*==========================================================================*/
+
 int32 sread(void)
-/*----------------------------------------------------------------------------
+/*
   This procedure scans an input string g using a lexical token scanning
   routine, e(), where e() returns
                     1 if the token is '('
@@ -316,7 +305,7 @@ int32 sread(void)
 
   SREAD constructs an S-expression and returns a typed pointer to it
   as its result.
-  --------------------------------------------------------------------------*/
+*/
 {int32 j,k,t,c;
 
  if ((c= e())<=0) return(c);
@@ -345,9 +334,9 @@ int32 sread(void)
  return 0; /* TODO: never reached */
 }
 
-/*===========================================================================*/
+
 int32 e(void)
-/*----------------------------------------------------------------------------
+/*
  E is a lexical token scanning routine which has no input and returns
        1 if the token is '('
        2 if the token is '''
@@ -355,7 +344,7 @@ int32 e(void)
        4 if the token is ')'
        or a negative typed-pointer to an entry in the atom table or the
        the number table.
------------------------------------------------------------------------------*/
+*/
 {double v,f,k,sign;
  int32 t,c;
  char nc[50], *np;
@@ -435,27 +424,27 @@ start:
  return(numatom(sign*v));
 }
 
-/*===========================================================================*/
+
 char getgchar(void)
-/*----------------------------------------------------------------------------
+/*
  Fill the buffer string pg (=pointer to g) if needed, and then remove and
  return the next character from the input.
------------------------------------------------------------------------------*/
+*/
 {fillg(); return(*pg++);}
 
-/*===========================================================================*/
+
 char lookgchar(void)
-/*----------------------------------------------------------------------------
+/*
  Fill the buffer string pg (=g) if needed, and then return a copy of
  the next character in the input, but don't advance pg..
- * -----------------------------------------------------------------------------*/
+*/
 {fillg(); return(*pg);}
 
-/*===========================================================================*/
+
 void fillg(void)
-/*----------------------------------------------------------------------------
+/*
  Read a line into g[]. A line starting with a "/" is a comment line.
------------------------------------------------------------------------------*/
+*/
 {while (pg>=pge)
    {sprompt: if (filep EQ stdin) {sprintf(sout,"%c",prompt); ourprint(sout);}
     if (fgetline(g,200,filep)<0) return;
@@ -465,14 +454,14 @@ void fillg(void)
    }
 }
 
-/*===========================================================================*/
+
 int16 fgetline(char *s, int16 lim, FILE *stream)
-/*----------------------------------------------------------------------------
+/*
  fgetline() gets a line (CRLF or LF delimited) from stream and puts it into s (up
  to lim chars).  The function returns the length of this string.  If there
  are no characters but just EOF, it returns -1 (EOF) as the length.  There
  is no deblanking except to drop CR's and LF's ('\n') and map TABs to blanks.
------------------------------------------------------------------------------*/
+*/
 {int16 c,i;
 #define TAB 9
  for (i=0; i<lim AND (c=fgetc(stream))!=EOF AND c!='\n'; ++i)
@@ -481,13 +470,13 @@ int16 fgetline(char *s, int16 lim, FILE *stream)
  if (c EQ EOF AND i EQ 0) return(-1); else return(i);
 }
 
-/*===========================================================================*/
+
 int32 numatom(double r)
-/*----------------------------------------------------------------------------
+/*
  The number r is looked-up in the number table and stored there as a lazy
  number atom if it is not already present.  The typed-pointer to this number
  atom is returned.
- ----------------------------------------------------------------------------*/
+*/
 {int32 j;
 
 #define hashnum(r) ((*(1+(int32 *)(&r)) & 0x7fffffff) % n)
@@ -502,14 +491,14 @@ int32 numatom(double r)
 ret: return(nu(j));
 }
 
-/*===========================================================================*/
+
 int32 ordatom (char *s)
-/*----------------------------------------------------------------------------
+/*
  The ordinary atom whose name is given as the argument string s is looked-up
  in the atom table and stored there as an atom with the value undefined if it
  is not already present.  The typed-pointer to this ordinary atom is then
  returned.
- ----------------------------------------------------------------------------*/
+*/
 {int32 j,c;
 
 #define hashname(s) (abs((s[0]<<16)+(s[j-1]<<8)+j) % n)
@@ -527,11 +516,11 @@ int32 ordatom (char *s)
 ret: return(oa(j));
 }
 
-/*===========================================================================*/
+
 void swrite(int32 j)
-/*----------------------------------------------------------------------------
+/*
  The S-expression pointed to by j is typed out.
- ----------------------------------------------------------------------------*/
+*/
 {int32 i;
  int16 listsw;
 
@@ -563,15 +552,15 @@ close:  ourprint(")");
     }
 }
 
-/*===========================================================================*/
+
 void traceprint(int32 v, int16 osw)
 /* int32 v; the object to be printed
  * int16 osw; 1 for seval() output, 0 for seval() input
  */
-/*----------------------------------------------------------------------------
+/*
  This function prints out the input and the result for each successive
  invocation of seval() when tracing is requested.
-----------------------------------------------------------------------------*/
+*/
 {if (tracesw>0)
     {if (osw EQ 1) sprintf(sout,"%d result:",ct--);
      else sprintf(sout,"%d seval:",++ct);
@@ -579,12 +568,12 @@ void traceprint(int32 v, int16 osw)
     }
 }
 
-/*==========================================================================*/
+
 int32 seval(int32 p)
-/*---------------------------------------------------------------------------
+/*
  Evaluate the S-expression pointed to by the typed-pointer p; construct the
  result value as necessary; return a typed-pointer to the result.
- ---------------------------------------------------------------------------*/
+*/
 {int32 ty,t,v,j,f,fa,na;
 /* I think t can be static. also fa and j?  -test later. */
 
@@ -876,23 +865,23 @@ doit:    t= seval(U2);
  Return(v);
 }
 
-/*========================================================================*/
+
 int32 newloc(int32 x, int32 y)
-/*--------------------------------------------------------------------------
+/*
  Allocates and loads the fields of a new location in the list area, with
  a()= X, b()= Y. The index of the new location is returned.
- -------------------------------------------------------------------------*/
+*/
 {int32 j;
 
  if (fp<0) {gcmark(x); gcmark(y); gc(); if (fp<0) error("out of space");}
  j= fp; fp= B(j); A(j)= x; B(j)= y; numf--; return(j);
 }
 
-/*========================================================================*/
+
 void gc(void)
-/*--------------------------------------------------------------------------
+/*
  Garbage collector for number table and listarea
---------------------------------------------------------------------------*/
+*/
 {int32 i,t;
 
 #define marked(p)    ((A(p) & 0x08000000)!=0)
@@ -918,11 +907,11 @@ void gc(void)
      if (NOT marked(i)) {B(i)= fp; fp= i; numf++;} else unmark(i);
 }
 
-/*========================================================================*/
+
 void gcmark(int32 p)
-/*--------------------------------------------------------------------------
+/*
  Mark the S-expression given by the typed-pointer p.
---------------------------------------------------------------------------*/
+*/
 {static int32 s,t;
 
 #define marknum(t,p)   if ((t) EQ 9) nmark[ptrv(p)]= 1
