@@ -144,8 +144,8 @@ void spacerpt(int32 r)
  sprintf(s,"entering spacerpt: r=%x, numf=%d\n", r, numf); ourprint(s);
 
  t = type(r);
- if (namedfsf(t)) r = ptrv(Atab[ptrv(r)].L); /* dereference r */
- if (builtin(t)) r = nilptr; /*do not try to mark a builtin */
+ if (namedfsf(t)) r = ptrv(Atab[ptrv(r)].L); /* Dereference r. */
+ if (builtin(t)) r = nilptr; /* Do not try to mark a builtin. */
  gcmark(r);
  gc();
 
@@ -175,10 +175,10 @@ int main(void)
 void error(char *msg)
 {int32 i,t;
 
- /* discard all input S-expression and argument list stacks */
+ /* Discard all input S-expression and argument list stacks. */
  Atab[currentin].L= nilptr; Atab[eaL].L= nilptr; Atab[sk].L= nilptr;
 
- /* reset all atoms to their top-level values */
+ /* Reset all atoms to their top-level values. */
  for (i= 0; i<n; i++) if ((t= Atab[i].bl)!=nilptr)
     {while (B(t)!=nilptr) t= B(t); Atab[i].L= A(t); Atab[i].bl= nilptr;}
 
@@ -490,7 +490,7 @@ void swrite(int32 j)
 
  i= ptrv(j);
  switch (type(j))
-    {case 0: /* check for a list */
+    {case 0: /* Check for a list. */
         j= i;
         while (type(B(j)) == 0) j= B(j);
         listsw= (B(j) == nilptr);
@@ -520,7 +520,7 @@ close:  ourprint(")");
 /* This function prints out the input and the result for each successive
    invocation of seval() when tracing is requested. */
 void traceprint(int32 v, int16 osw)
-/* int32 v; the object to be printed,
+/* int32 v; the object to be printed.
    int16 osw; 1 for seval() output, 0 for seval() input. */
 {if (tracesw>0)
     {if (osw == 1) sprintf(sout,"%d result:",ct--);
@@ -578,7 +578,7 @@ int32 seval(int32 p)
 
     if (namedfsf(t)) Return(tp(t<<28,j));
     Return(Atab[j].L);
-   } /* end of if (type(p)!=0) */
+   } /* End of if (type(p)!=0). */
 
  /* Save the list consisting of the current function and the supplied
     arguments as the top value of the currentin list to protect it
@@ -658,7 +658,7 @@ int32 seval(int32 p)
            {t= ptrv(A(fa)); fa= B(fa);
             Atab[t].L= A(Atab[t].bl); Atab[t].bl= B(Atab[t].bl);
            }
-    } /* End non-builtins. */
+    }/* End non-builtins. */
  else
     {/* At this point we have a builtin function or special form.  f
         is the pointer value of the atom in the atom table for the
@@ -854,7 +854,7 @@ void gc(void)
         nx[t]= i; nmark[i]= 0;
        }
 
- /* build the new list-node free-space list */
+ /* Build the new list-node free-space list. */
  fp= -1; numf= 0;
  for (i=1; i<m; i++)
      if (! marked(i)) {B(i)= fp; fp= i; numf++;} else unmark(i);
