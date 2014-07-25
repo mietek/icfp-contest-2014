@@ -177,19 +177,22 @@ void spacerpt(int32 r)
 
 /* The main read/eval/print loop. */
 int main(void)
-{int32 r;
+{
+	int32 r;
 
- initlisp();
+	initlisp();
 
- setjmp(env);
- /* Calling error() returns to here by longjmp(). */
+	setjmp(env);
+	/* Calling error() returns to here by longjmp(). */
 
- for (;;) {ourprint("\n");
-           prompt= '*';
-           r=sread();
-           r=seval(r);
-           swrite(r);  /* swrite uses/frees no list-nodes. */
-          }
+	for (;;) {
+		ourprint("\n");
+		prompt = '*';
+		r = sread();
+		r = seval(r);
+		/* swrite uses/frees no list-nodes. */
+		swrite(r);
+	}
 }
 
 
