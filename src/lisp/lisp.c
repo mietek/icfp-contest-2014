@@ -367,8 +367,10 @@ int32 sread(void)
 
 	/* We will return k, but we will fill node j first. */
 	if (c == 1) {
-scan:		A(j) = sread();
-next:		if ((c = e()) <= 2) {
+scan:
+		A(j) = sread();
+next:
+		if ((c = e()) <= 2) {
 			t = newloc(nilptr, nilptr);
 			B(j) = t;
 			j = t;
@@ -433,7 +435,8 @@ int32 e(void)
 		return (t);
 	}
 
-start:	while ((c = getgchar()) == BLANK) {
+start:
+	while ((c = getgchar()) == BLANK) {
 		; /* Remove blanks. */
 	}
 
@@ -535,7 +538,8 @@ start:	while ((c = getgchar()) == BLANK) {
 	if (lookgchar() == DOT) {
 		getgchar();
 		if (DIGIT(lookgchar())) {
-fraction:		k = 1.0;
+fraction:
+			k = 1.0;
 			f = 0.0;
 			do {
 				k = 10. * k;
@@ -570,7 +574,8 @@ char lookgchar(void)
 void fillg(void)
 {
 	while (pg >= pge) {
-sprompt:	if (filep == stdin) {
+sprompt:
+		if (filep == stdin) {
 			sprintf(sout, "%c", prompt);
 			ourprint(sout);
 		}
@@ -648,7 +653,8 @@ int32 numatom(double r)
 	j = nf;
 	nf = Ntab[nf].nlink;
 	Ntab[j].num = r;
-ret:	return (nu(j));
+ret:
+	return (nu(j));
 }
 
 
