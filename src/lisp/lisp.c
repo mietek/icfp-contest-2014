@@ -855,232 +855,391 @@ int32 seval(int32 p)
 	/* Now let go of the supplied input function. */
 	A(cilp) = p = B(p);
 
- /* If f is a function (not a special form), build a new list of its
-    evaluated arguments and add it to the eaL list (the eaL list is a
-    list of lists.)  Then let go of the list of supplied arguments,
-    replacing it with the new list of evaluated arguments. */
- if (fct(ty))
-    {/* Compute the actual arguments. */
-     eaLp= newloc(nilptr,eaLp);
-     /* Evaluate the actual arguments and build a list by tail-cons-ing! */
-     endeaL= &A(eaLp);
-     while (p!=nilptr)
-        {*endeaL= newloc(seval(A(p)),nilptr); endeaL= &B(*endeaL); p= B(p);}
-     /* Set p to be the first node in the evaluated arguments list. */
-     p= A(eaLp);
+	/* If f is a function (not a special form), build a new list of its
+	   evaluated arguments and add it to the eaL list (the eaL list is a
+	   list of lists.)  Then let go of the list of supplied arguments,
+	   replacing it with the new list of evaluated arguments. */
+	if (fct(ty)) {
+		/* Compute the actual arguments. */
+		eaLp = newloc(nilptr,eaLp);
 
-     /* Throw away the current supplied arguments list by popping the
-        currentin list */
-     cilp= B(cilp);
-    }
+		/* Evaluate the actual arguments and build a list by tail-cons-ing! */
+		endeaL = &A(eaLp);
+		while (p != nilptr) {
+			*endeaL = newloc(seval(A(p)), nilptr);
+			endeaL = &B(*endeaL);
+			p= B(p);
+		}
 
- /* At this point p points to the first node of the actual argument
-    list.  if p == nilptr, we have a function or special form with no
-    arguments */
- if (! builtin(ty))
-    {/* f is a non-builtin function or non-builtin special form.  do
-        shallow binding of the arguments and evaluate the body of f by
-        calling seval. */
-     fa= A(f); /* fa points to the first node of the formal argument list. */
-     na= 0;    /* na counts the number of arguments. */
-     /* Run through the arguments and place them as the top values of
-	the formal argument atoms in the atom-table.  Push the old
-	value of each formal argument on its binding list. */
-     if (type(fa) == 8 && fa != nilptr)
-        {/* This will bind the entire input actual arglist as the
-            single actual arg.  Sometimes, it is wrong - we should
-            dereference the named fsf's in the p list, first. */
-         t=ptrv(fa);
-         Atab[t].bl=newloc(Atab[t].L,Atab[t].bl);
-         Atab[t].L=p;
-         goto apply;
-        }
-     else
-	while (p!=nilptr && dottedpair(type(fa)))
-           {t= ptrv(A(fa)); fa= B(fa);
-            Atab[t].bl= newloc(Atab[t].L,Atab[t].bl);
-            v= A(p); if (namedfsf(type(v))) v= Atab[ptrv(v)].L;
-            Atab[t].L= v; ++na; p= B(p);
-           }
+		/* Set p to be the first node in the evaluated arguments list. */
+		p = A(eaLp);
 
-     if (p!=nilptr) error("too many actuals");
-     /* The following code would forbid some useful trickery.
-        if (fa!=nilptr) error("too many formals"); */
+		/* Throw away the current supplied arguments list by popping the
+		   currentin list */
+		cilp = B(cilp);
+	}
 
-     /* Now apply the non-builtin special form or function. */
- apply: v= seval(B(f));
+	/* At this point p points to the first node of the actual argument
+	   list.  if p == nilptr, we have a function or special form with no
+	   arguments */
+	if (! builtin(ty)) {
+		/* f is a non-builtin function or non-builtin special form.  do
+		   shallow binding of the arguments and evaluate the body of f by
+		   calling seval. */
+		fa = A(f); /* fa points to the first node of the formal argument list. */
+		na = 0;    /* na counts the number of arguments. */
+		/* Run through the arguments and place them as the top values of
+		   the formal argument atoms in the atom-table.  Push the old
+		   value of each formal argument on its binding list. */
+		if (type(fa) == 8 && fa != nilptr) {
+			/* This will bind the entire input actual arglist as the
+			   single actual arg.  Sometimes, it is wrong - we should
+			   dereference the named fsf's in the p list, first. */
+			t = ptrv(fa);
+			Atab[t].bl = newloc(Atab[t].L, Atab[t].bl);
+			Atab[t].L = p;
+			goto apply;
+		} else {
+			while (p != nilptr && dottedpair(type(fa))) {
+				t = ptrv(A(fa));
+				fa = B(fa);
+				Atab[t].bl = newloc(Atab[t].L, Atab[t].bl);
+				v = A(p);
+				if (namedfsf(type(v))) {
+					v = Atab[ptrv(v)].L;
+				}
+				Atab[t].L= v;
+				++na;
+				p = B(p);
+			}
+		}
+		if (p != nilptr) {
+			error("too many actuals");
+		}
+		/* The following code would forbid some useful trickery.
+		   if (fa!=nilptr) error("too many formals"); */
 
-     /* Now unbind the actual arguments. */
-     fa= A(f);
-     if (type(fa) == 8 && fa != nilptr)
-        {t= ptrv(fa); Atab[t].L= A(Atab[t].bl); Atab[t].bl= B(Atab[t].bl);}
-     else
-        while (na-- > 0)
-           {t= ptrv(A(fa)); fa= B(fa);
-            Atab[t].L= A(Atab[t].bl); Atab[t].bl= B(Atab[t].bl);
-           }
-    }/* End non-builtins. */
- else
-    {/* At this point we have a builtin function or special form.  f
-        is the pointer value of the atom in the atom table for the
-        called function or special form and p is the pointer to the
-        argument list.*/
+		/* Now apply the non-builtin special form or function. */
+apply:
+		v = seval(B(f));
 
-     v= nilptr;
-     switch (f) /* Begin builtins. */
-     {case 1: /* CAR */
-         if (! dottedpair(type(E1))) error("illegal CAR argument");
-         v= A(E1); break;
-      case 2: /* CDR */
-         if (! dottedpair(type(E1))) error("illegal CDR argument");
-         v= B(E1); break;
-      case 3: /* CONS */
-         if (sexp(type(E1)) && sexp(type(E2))) v= newloc(E1,E2);
-         else error("Illegal CONS arguments");
-         break;
+		/* Now unbind the actual arguments. */
+		fa = A(f);
+		if (type(fa) == 8 && fa != nilptr) {
+			t = ptrv(fa);
+			Atab[t].L = A(Atab[t].bl);
+			Atab[t].bl = B(Atab[t].bl);
+		} else {
+			while (na-- > 0) {
+				t = ptrv(A(fa));
+				fa= B(fa);
+				Atab[t].L = A(Atab[t].bl);
+				Atab[t].bl = B(Atab[t].bl);
+			}
+		}
+		/* End non-builtins. */
+	} else {
+		/* At this point we have a builtin function or special form.  f
+		   is the pointer value of the atom in the atom table for the
+		   called function or special form and p is the pointer to the
+		   argument list. */
 
-         /* For LAMBDA and SPECIAL, we could check that U1 is either an
-            ordinary atom or a list of ordinary atoms. */
-      case 4:/* LAMBDA */ v= tf(newloc(U1,U2)); break;
-      case 5:/* SPECIAL */ v= ts(newloc(U1,U2)); break;
-      case 6:/* SETQ */
-         f= U1; if (type(f)!=8) error("illegal assignment");
-assign:  v= ptrv(f); endeaL= &Atab[v].L;
-doit:    t= seval(U2);
-         switch (type(t))
-            {case 0: /* Dotted pair. */
-             case 8: /* Ordinary atom. */
-             case 9: /* Number atom. */
-		*endeaL= t; break;
-             case 10: /* Builtin function */
-             case 11: /* Builtin special form. */
-             case 12: /* User-defined function. */
-             case 13: /* User-defined special form. */
-		*endeaL= Atab[ptrv(t)].L; break;
-             case 14: /* Unnamed function */
-		*endeaL= uf(ptrv(t)); break;
-             case 15: /* Unamed special form. */
-	        *endeaL= us(ptrv(t)); break;
-            } /* End of type(t) switch cases. */
+		v = nilptr;
+		switch (f) { /* Begin builtins. */
+		case 1: /* CAR */
+			if (!dottedpair(type(E1))) {
+				error("illegal CAR argument");
+			}
+			v = A(E1);
+			break;
 
-         tracesw--; v= seval(f); tracesw++; break;
+		case 2: /* CDR */
+			if (!dottedpair(type(E1))) {
+				error("illegal CDR argument");
+			}
+			v = B(E1);
+			break;
 
-      case 7: /* ATOM */
-         if ((type(E1)) == 8 || (type(E1)) == 9) v= tptr; break;
+		case 3: /* CONS */
+			if (sexp(type(E1)) && sexp(type(E2))) {
+				v = newloc(E1, E2);
+			} else {
+				error("Illegal CONS arguments");
+			}
+			break;
 
-      case 8: /* NUMBERP */
-         if (type(E1) == 9) v= tptr; break;
+		/* For LAMBDA and SPECIAL, we could check that U1 is either an
+		   ordinary atom or a list of ordinary atoms. */
 
-      case 9: /* QUOTE */ v= U1; break;
-      case 10: /* LIST */ v= p; break;
-      case 11: /* DO */ while (p!=nilptr) {v= A(p); p= B(p);} break;
+		case 4: /* LAMBDA */
+			v = tf(newloc(U1, U2));
+			break;
 
-      case 12: /* COND */
-         while (p!=nilptr)
-            {f = A(p);
-             if (seval(A(f))!=nilptr) {v=seval(A(B(f))); break;} else p=B(p);
-            }
-         break;
+		case 5: /* SPECIAL */
+			v = ts(newloc(U1, U2));
+			break;
 
-      case 13: /* PLUS */
-         v= numatom(Ntab[ptrv(E1)].num+Ntab[ptrv(E2)].num); break;
+		case 6: /* SETQ */
+			f = U1;
+			if (type(f) != 8) {
+				error("illegal assignment");
+			}
+assign:
+			v = ptrv(f);
+			endeaL = &Atab[v].L;
+doit:
+			t = seval(U2);
+			switch (type(t)) {
+			case 0: /* Dotted pair. */
+			case 8: /* Ordinary atom. */
+			case 9: /* Number atom. */
+				*endeaL = t;
+				break;
+			case 10: /* Builtin function */
+			case 11: /* Builtin special form. */
+			case 12: /* User-defined function. */
+			case 13: /* User-defined special form. */
+				*endeaL = Atab[ptrv(t)].L;
+				break;
+			case 14: /* Unnamed function */
+				*endeaL = uf(ptrv(t));
+				break;
+			case 15: /* Unamed special form. */
+				*endeaL = us(ptrv(t));
+				break;
+			 /* End of type(t) switch cases. */
+			}
 
-      case 14: /* TIMES */
-         v= numatom(Ntab[ptrv(E1)].num*Ntab[ptrv(E2)].num); break;
+			tracesw--;
+			v = seval(f);
+			tracesw++;
+			break;
 
-      case 15: /* DIFFERENCE */
-         v= numatom(Ntab[ptrv(E1)].num-Ntab[ptrv(E2)].num); break;
+		case 7: /* ATOM */
+			if ((type(E1)) == 8 || (type(E1)) == 9) {
+				v = tptr;
+			}
+			break;
 
-      case 16: /* QUOTIENT */
-         v= numatom(Ntab[ptrv(E1)].num/Ntab[ptrv(E2)].num); break;
+		case 8: /* NUMBERP */
+			if (type(E1) == 9) {
+				v = tptr;
+			}
+			break;
 
-      case 17: /* POWER */
-         v= numatom(pow(Ntab[ptrv(E1)].num,Ntab[ptrv(E2)].num));
-         break;
+		case 9: /* QUOTE */
+			v = U1;
+			break;
 
-      case 18: /* FLOOR */ v= numatom(floor(Ntab[ptrv(E1)].num)); break;
-      case 19: /* MINUS */ v= numatom(-Ntab[ptrv(E1)].num); break;
-      case 20: /* LESSP */
-         if(Ntab[ptrv(E1)].num<Ntab[ptrv(E2)].num) v= tptr; break;
+		case 10: /* LIST */
+			v = p;
+			break;
 
-      case 21: /* GREATERP */
-         if (Ntab[ptrv(E1)].num>Ntab[ptrv(E2)].num) v= tptr; break;
+		case 11: /* DO */
+			while (p != nilptr) {
+				v = A(p);
+				p = B(p);
+			}
+			break;
 
-      case 22: /* EVAL */ v= seval(E1); break;
-      case 23: /* EQ */ v= (E1 == E2) ? tptr : nilptr; break;
+		case 12: /* COND */
+			while (p != nilptr) {
+				f = A(p);
+				if (seval(A(f)) != nilptr) {
+					v = seval(A(B(f)));
+					break;
+				} else {
+					p = B(p);
+				}
+			}
+			break;
 
-      case 24: /* AND */
-         while (p!=nilptr && seval(A(p))!=nilptr) p= B(p);
-         if (p == nilptr) v= tptr;  /* else v remains nilptr */
-         break;
+		case 13: /* PLUS */
+			v = numatom(Ntab[ptrv(E1)].num + Ntab[ptrv(E2)].num);
+			break;
 
-      case 25: /* OR */
-         while (p!=nilptr && seval(A(p)) == nilptr) p= B(p);
-         if (p!=nilptr) v= tptr;  /* else v remains nilptr */
-         break;
+		case 14: /* TIMES */
+			v = numatom(Ntab[ptrv(E1)].num * Ntab[ptrv(E2)].num);
+			break;
 
-      case 26: /* SUM */
-         for (s= 0.0; p!=nilptr; s= s+Ntab[ptrv(A(p))].num, p= B(p));
-         v= numatom(s); break;
+		case 15: /* DIFFERENCE */
+			v = numatom(Ntab[ptrv(E1)].num - Ntab[ptrv(E2)].num);
+			break;
 
-      case 27: /* PRODUCT */
-         for (s= 1.0; p!=nilptr; s= s*Ntab[ptrv(A(p))].num, p= B(p));
-         v= numatom(s); break;
+		case 16: /* QUOTIENT */
+			v = numatom(Ntab[ptrv(E1)].num / Ntab[ptrv(E2)].num);
+			break;
 
-      case 28: /* PUTPLIST */ v= E1; Atab[ptrv(v)].plist= E2; break;
-      case 29: /* GETPLIST */ v= Atab[ptrv(E1)].plist; break;
-      case 30: /* READ */ ourprint("\n!"); prompt= EOS; v= sread(); break;
-      case 31: /* PRINT */
-         if (p == nilptr) ourprint(" ");
-         else while (p!=nilptr) {swrite(A(p)); ourprint(" "); p= B(p);}
-         break;
+		case 17: /* POWER */
+			v = numatom(pow(Ntab[ptrv(E1)].num, Ntab[ptrv(E2)].num));
+			break;
 
-      case 32: /* PRINTCR */
-         if (p == nilptr) ourprint("\n");
-         else while (p!=nilptr) {swrite(A(p)); ourprint("\n"); p= B(p);}
-         break;
+		case 18: /* FLOOR */
+			v = numatom(floor(Ntab[ptrv(E1)].num));
+			break;
 
-      case 33: /* MKATOM */
-         strcpy(sout,Atab[ptrv(E1)].name); strcat(sout,Atab[ptrv(E2)].name);
-         v= ordatom(sout); break;
+		case 19: /* MINUS */
+			v = numatom(-Ntab[ptrv(E1)].num);
+			break;
 
-      case 34: /* BODY */
-         if (unnamedfsf(type(E1))) v= ptrv(E1);
-         else if (userdefd(type(E1))) v= ptrv(Atab[ptrv(E1)].L);
-	 else error("illegal BODY argument");
-	 break;
+		case 20: /* LESSP */
+			if (Ntab[ptrv(E1)].num < Ntab[ptrv(E2)].num) {
+				v = tptr;
+			}
+			break;
 
-      case 35: /* RPLACA */
-	 v= E1;
-	 if (! dottedpair(type(v))) error("illegal RPLACA argument");
-	 A(v)= E2; break;
+		case 21: /* GREATERP */
+			if (Ntab[ptrv(E1)].num > Ntab[ptrv(E2)].num) {
+				v = tptr;
+			}
+			break;
 
-      case 36: /* RPLACD */
-         v= E1;
-         if (! dottedpair(type(v))) error("illegal RPLACD argument");
-         B(v)= E2; break;
+		case 22: /* EVAL */
+			v = seval(E1);
+			break;
 
-      case 37: /* TSETQ */
-	/* Set the top-level value of U1 to seval(U2).*/
-	 if (Atab[f= ptrv(U1)].bl == nilptr) goto assign;
-	 v= Atab[f].bl; while (B(v)!=nilptr) v= B(v);
-	 endeaL= &A(v); goto doit;
+		case 23: /* EQ */
+			v = (E1 == E2) ? tptr : nilptr;
+			break;
 
-      case 38: /* NULL */
-         if (E1 == nilptr) v= tptr; break;
+		case 24: /* AND */
+			while (p != nilptr && seval(A(p)) != nilptr) {
+				p = B(p);
+			}
+			if (p == nilptr) {
+				v = tptr; /* else v remains nilptr */
+			}
+			break;
 
-      case 39:  /* SET */
-	 f= seval(U1); goto assign;
+		case 25: /* OR */
+			while (p != nilptr && seval(A(p)) == nilptr) {
+				p = B(p);
+			}
+			if (p != nilptr) {
+				v = tptr; /* else v remains nilptr */
+			}
+			break;
 
-      default: error("dryrot: bad builtin case number");
-     } /* End of switch cases. */
+		case 26: /* SUM */
+			for (s = 0.0; p != nilptr; s = s + Ntab[ptrv(A(p))].num, p = B(p)) {
+				;
+			}
+			v = numatom(s);
+			break;
 
-    } /* End builtins. */
+		case 27: /* PRODUCT */
+			for (s = 1.0; p != nilptr; s = s * Ntab[ptrv(A(p))].num, p = B(p)) {
+				;
+			}
+			v = numatom(s);
+			break;
 
- /* Pop the eaL list or pop the currentin list, whichever is active. */
- if (fct(ty)) eaLp= B(eaLp); else cilp= B(cilp);
+		case 28: /* PUTPLIST */
+			v = E1;
+			Atab[ptrv(v)].plist = E2;
+			break;
 
- Return(v);
+		case 29: /* GETPLIST */
+			v = Atab[ptrv(E1)].plist;
+			break;
+
+		case 30: /* READ */
+			ourprint("\n!");
+			prompt = EOS;
+			v = sread();
+			break;
+
+		case 31: /* PRINT */
+			if (p == nilptr) {
+				ourprint(" ");
+			} else {
+				while (p != nilptr) {
+					swrite(A(p));
+					ourprint(" ");
+					p= B(p);
+				}
+			}
+			break;
+
+		case 32: /* PRINTCR */
+			if (p == nilptr) {
+				ourprint("\n");
+			} else {
+				while (p != nilptr) {
+					swrite(A(p));
+					ourprint("\n");
+					p = B(p);
+				}
+			}
+			break;
+
+		case 33: /* MKATOM */
+			strcpy(sout, Atab[ptrv(E1)].name);
+			strcat(sout, Atab[ptrv(E2)].name);
+			v = ordatom(sout);
+			break;
+
+		case 34: /* BODY */
+			if (unnamedfsf(type(E1))) {
+				v = ptrv(E1);
+			} else if (userdefd(type(E1))) {
+				v = ptrv(Atab[ptrv(E1)].L);
+			} else {
+				error("illegal BODY argument");
+			}
+			break;
+
+		case 35: /* RPLACA */
+			v = E1;
+			if (!dottedpair(type(v))) {
+				error("illegal RPLACA argument");
+			}
+			A(v) = E2;
+			break;
+
+		case 36: /* RPLACD */
+			v = E1;
+			if (!dottedpair(type(v))) {
+				error("illegal RPLACD argument");
+			}
+			B(v)= E2;
+			break;
+
+		case 37: /* TSETQ */
+			/* Set the top-level value of U1 to seval(U2).*/
+			if (Atab[f = ptrv(U1)].bl == nilptr) {
+				goto assign;
+			}
+			v = Atab[f].bl;
+			while (B(v) != nilptr) {
+				v = B(v);
+			}
+			endeaL = &A(v);
+			goto doit;
+
+		case 38: /* NULL */
+			if (E1 == nilptr) {
+				v = tptr;
+			}
+			break;
+
+		case 39: /* SET */
+			f = seval(U1);
+			goto assign;
+
+		default: error("dryrot: bad builtin case number");
+		} /* End of switch cases. */
+
+	} /* End builtins. */
+
+	/* Pop the eaL list or pop the currentin list, whichever is active. */
+	if (fct(ty)) {
+		eaLp = B(eaLp);
+	} else {
+		cilp = B(cilp);
+	}
+
+	Return(v);
 }
 
 
