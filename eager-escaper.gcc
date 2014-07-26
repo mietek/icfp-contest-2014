@@ -21,7 +21,7 @@ CAR
 CDR            ; as well as his position
 CAR
 LD 0 0         ; compare with previous position
-LDF 317
+LDF 355
 AP 2
 LD 0 1         ; extract current world map
 CAR
@@ -51,42 +51,66 @@ LD 0 1         ; is it stuck?
 TSEL 51 57
 LD 0 3         ; pseudo-RNG seed ; @changeDirection
 LDC 3          ; 1/3 chance it will go counter-clockwise
-LDF 329
+LDF 367
 AP 2
-LDF 67
+LDF 91
 AP 2
 LD 0 2         ; but maybe it's better to follow dots ; @continue
 LD 0 4
-LDF 218
+LDF 242
 AP 3
 LD 0 2         ; no matter what, try to escape ghosts
 LD 0 4
 LD 0 5
-LDF 78
+LDF 102
 AP 4
+LD 0 2
+LD 0 4
+LD 0 3
+LDF 72
+AP 4
+RTN
+LD 0 1         ; world map ; @avoidBump
+LD 0 0         ; planned direction
+LD 0 2         ; current position
+LDF 117
+AP 2           ; (after 2 moves, after 1 move)
+CDR            ; only check one move ahead
+LDF 292
+AP 2
+TSEL 81 89
+LD 0 0         ; @turn
+LD 0 3         ; pseudo-RNG seed
+LDC 3          ; 1/3 chance it will go counter-clockwise
+LDF 367
+AP 2
+LDF 91
+AP 2
+RTN
+LD 0 0         ; @noBumps
 RTN
 LD 0 0         ; previous direction ; @rotate
 LD 0 1         ; rotation type
-TSEL 70 72
+TSEL 94 96
 LDC 2          ; @counterClockWise
 ADD
 LDC 1          ; @clockWise
 ADD
 LDC 4
-LDF 329
+LDF 367
 AP 2
 RTN
 LD 0 0         ; @escapeGhosts
 LD 0 2
-LDF 93
+LDF 117
 AP 2           ; list of ghost positions
 LD 0 3         ; load ghosts list
-LDF 169
+LDF 193
 AP 2
-TSEL 86 91
+TSEL 110 115
 LD 0 0         ; @tryEscaping
 LDC 0
-LDF 67
+LDF 91
 AP 2
 RTN
 LD 0 0         ; no ghosts around, no direction change ; @noEscape
@@ -94,15 +118,15 @@ RTN
 LD 0 0         ; direction ; @potentialGhostPositions
 LDC 0
 CEQ
-TSEL 105 97
+TSEL 129 121
 LD 0 0         ; @notUp
 LDC 1
 CEQ
-TSEL 121 101
+TSEL 145 125
 LD 0 0         ; @notRight
 LDC 2
 CEQ
-TSEL 137 153
+TSEL 161 177
 LD 0 1         ; @positionsAbove
 CAR
 LD 0 1
@@ -171,19 +195,19 @@ LD 0 0         ; position to check ; @checkForGhosts
 CAR
 LD 0 1         ; list of ghosts
 DUM 2
-LDF 183
+LDF 207
 RAP 2
 LD 0 0
 CDR
 LD 0 1
 DUM 2
-LDF 183
+LDF 207
 RAP 2
 ADD
 RTN
 LD 0 1         ; @checkGhostsOnPosition
 ATOM
-TSEL 186 188
+TSEL 210 212
 LDC 0          ; @noGhostsLeft
 RTN
 LD 0 1         ; @checkNextGhost
@@ -191,7 +215,7 @@ CAR            ; take first ghost
 CDR            ; pick second attribute
 CAR
 LD 0 0
-LDF 317
+LDF 355
 AP 2
 LD 0 1         ; check his next position too
 CAR
@@ -201,31 +225,31 @@ LD 0 1
 CAR
 CDR            ; and position
 CAR
-LDF 93
+LDF 117
 AP 2           ; (after 2 moves, after 1 move)
 CDR            ; only check one move ahead
 LD 0 0
-LDF 317
+LDF 355
 AP 2
 ADD
-TSEL 211 213
+TSEL 235 237
 LDC 1          ; @thereIsGhost
 RTN
 LD 0 0         ; @checkTheRest
 LD 0 1
 CDR
-LDF 183
+LDF 207
 TAP 2
 LD 0 1         ; the map ; @followDots
 LD 0 2         ; l-man position
 LDC 1          ; check right
 LDC 0
 CONS
-LDF 292
+LDF 330
 AP 2
-LDF 268
+LDF 306
 AP 2
-TSEL 228 230
+TSEL 252 254
 LDC 1          ; @grabFoodRight
 RTN
 LD 0 1         ; @checkFoodLeft
@@ -233,11 +257,11 @@ LD 0 2         ; l-man position
 LDC -1         ; check left
 LDC 0
 CONS
-LDF 292
+LDF 330
 AP 2
-LDF 268
+LDF 306
 AP 2
-TSEL 240 242
+TSEL 264 266
 LDC 3          ; @grabFoodLeft
 RTN
 LD 0 1         ; @checkFoodDown
@@ -245,11 +269,11 @@ LD 0 2         ; l-man position
 LDC 0          ; check down
 LDC 1
 CONS
-LDF 292
+LDF 330
 AP 2
-LDF 268
+LDF 306
 AP 2
-TSEL 252 254
+TSEL 276 278
 LDC 2          ; @grabFoodDown
 RTN
 LD 0 1         ; @checkFoodUp
@@ -257,29 +281,43 @@ LD 0 2         ; l-man position
 LDC 0          ; check up
 LDC -1
 CONS
-LDF 292
+LDF 330
 AP 2
-LDF 268
+LDF 306
 AP 2
-TSEL 264 266
+TSEL 288 290
 LDC 0          ; @grabFoodUp
 RTN
 LD 0 0         ; no food, no direction change ; @noFood
+RTN
+LD 0 0         ; the world ; @isThereWall
+LD 0 1         ; position to check
+CDR            ; which row
+DUM 2
+LDF 342
+RAP 2
+LD 0 1
+CAR            ; which cell in row
+DUM 2
+LDF 342
+RAP 2
+LDC 0          ; 0 = wall
+CEQ
 RTN
 LD 0 0         ; the world ; @isThereFood
 LD 0 1         ; position to check
 CDR            ; which row
 DUM 2
-LDF 304
+LDF 342
 RAP 2
 LD 0 1
 CAR            ; which cell in row
 DUM 2
-LDF 304
+LDF 342
 RAP 2
 LDC 2          ; food = 2 | 3
 LDC 3
-LDF 284
+LDF 322
 AP 3
 RTN
 LD 0 0         ; @isInRange
@@ -306,14 +344,14 @@ LD 0 0         ; list ; @nth
 LD 0 1         ; position
 LDC 0
 CGT
-TSEL 311 309
+TSEL 349 347
 CAR            ; just get head ; @head
 RTN
 CDR            ; take tail ; @tail
 LD 0 1         ; subtract one
 LDC 1
 SUB
-LDF 304
+LDF 342
 TAP 2
 LD 0 0         ; @comparePairs
 CAR
