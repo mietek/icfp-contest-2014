@@ -1,21 +1,24 @@
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+#define halt(s)       do { fprintf(stderr, s); exit(1); } while (0)
+#define haltf(s, ...) do { fprintf(stderr, s, __VA_ARGS__); exit(0); } while (0)
+
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef enum {
-	FIXNUM_TYPE,
-	CONS_TYPE,
-	CLOSURE_TYPE
+	NO_TYPE     = 0,
+	FIXNUM_TYPE = 1
 } object_type;
 
 typedef int32_t fixnum;
 
-typedef struct object {
+typedef struct {
 	object_type type;
 	union {
 		struct {
@@ -24,14 +27,14 @@ typedef struct object {
 	} data;
 } object;
 
-object *alloc_object()
+object *make_object()
 {
 	object *obj;
 
 	if (!(obj = malloc(sizeof(object)))) {
-		fprintf(stderr, "Out of memory\n");
-		exit(1);
+		halt("Out of memory\n");
 	}
+	obj->type = NO_TYPE;
 	return obj;
 }
 
@@ -39,15 +42,111 @@ object *make_fixnum(fixnum val)
 {
 	object *obj;
 
-	obj = alloc_object();
+	obj = make_object();
 	obj->type = FIXNUM_TYPE;
 	obj->data.fixnum.value = val;
 	return obj;
 }
 
+object_type get_type(object *obj)
+{
+	assert(obj->type != NO_TYPE);
+	return obj->type;
+}
+
 int is_fixnum(object *obj)
 {
-	return obj->type == FIXNUM_TYPE;
+	return get_type(obj) == FIXNUM_TYPE;
+}
+
+fixnum get_fixnum(object *obj)
+{
+	assert(is_fixnum(obj));
+	return obj->data.fixnum.value;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+typedef void *tagged_object;
+
+typedef enum {
+	NO_TAG     = 0x00,
+	FIXNUM_TAG = 0x01
+} object_tag;
+
+#define OBJECT_TAG_MASK 0x07
+
+tagged_object tag_object(object_tag tag, void *obj)
+{
+	assert((((uint64_t)obj) & OBJECT_TAG_MASK) == 0);
+	return (tagged_object)((((uint64_t)obj) & ~OBJECT_TAG_MASK) | tag);
+}
+
+void *untag_object(tagged_object obj)
+{
+	return (void *)((uint64_t)obj & ~OBJECT_TAG_MASK);
+}
+
+object_tag get_tag(tagged_object obj)
+{
+	return ((uint64_t)obj) & OBJECT_TAG_MASK;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define INIT_STACK_SIZE 1024
+
+typedef struct {
+	size_t size;
+	tagged_object *base;
+	tagged_object *top;
+	tagged_object *limit;
+} stack;
+
+stack *data_stack;
+stack *control_stack;
+
+stack *make_stack()
+{
+	stack *stk;
+
+	if (!(stk = malloc(sizeof(stack)))) {
+		halt("Out of memory\n");
+	}
+	stk->size = INIT_STACK_SIZE;
+	if (!(stk->base = malloc(stk->size * sizeof(object *)))) {
+		halt("Out of memory\n");
+	}
+	stk->top = stk->base;
+	stk->limit = stk->base + stk->size;
+	return stk;
+}
+
+void push_object(stack *stk, tagged_object obj)
+{
+	if (stk->top == stk->limit) {
+		stk->size *= 2;
+		if (!(stk->base = realloc(stk->base, stk->size * sizeof(object *)))) {
+			halt("Out of memory\n");
+		}
+		stk->top = stk->base + stk->size / 2;
+		stk->limit = stk->base + stk->size;
+	}
+	*(stk->top)++ = obj;
+}
+
+void push_fixnum(stack *stk, object *obj)
+{
+	assert(is_fixnum(obj));
+	push_object(stk, tag_object(FIXNUM_TAG, obj));
+}
+
+tagged_object pop_object(stack *stk)
+{
+	if (stk->top == stk->base) {
+		halt("Stack underflow\n");
+	}
+	return *(stk->top)--;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,7 +163,7 @@ int peekc(FILE *in)
 	return c;
 }
 
-void skip_space(FILE *in)
+void skip_spaces(FILE *in)
 {
 	int c;
 
@@ -87,13 +186,16 @@ object *read_fixnum(FILE *in, int sign)
 {
 	int c;
 	fixnum val = 0;
+	object *obj;
 
 	while (isdigit((c = getc(in)))) {
 		val = (val * 10) + digittoint(c);
 	}
 	val *= sign;
 	ungetc(c, in);
-	return make_fixnum(val);
+	obj = make_fixnum(val);
+	push_fixnum(data_stack, obj);
+	return obj;
 }
 
 object *read(FILE *in)
@@ -101,7 +203,7 @@ object *read(FILE *in)
 	int c;
 	int sign = 1;
 
-	skip_space(in);
+	skip_spaces(in);
 	if ((c = getc(in)) == EOF) {
 		printf("\n");
 		exit(0);
@@ -129,16 +231,12 @@ object *eval(object *expr)
 
 void write(object *obj)
 {
-	switch (obj->type) {
+	switch (get_type(obj)) {
 	case FIXNUM_TYPE:
-		printf("%d", obj->data.fixnum.value);
-		break;
-	case CONS_TYPE:
-		break;
-	case CLOSURE_TYPE:
+		printf("%d", get_fixnum(obj));
 		break;
 	default:
-		fprintf(stderr, "Unexpected object type %d\n", obj->type);
+		fprintf(stderr, "Unexpected object type %d\n", get_type(obj));
 		exit(1);
 	}
 }
@@ -148,6 +246,8 @@ void write(object *obj)
 int main()
 {
 	printf("Hello, world!\n");
+	data_stack = make_stack();
+	control_stack = make_stack();
 	while (1) {
 		printf("> ");
 		write(eval(read(stdin)));
