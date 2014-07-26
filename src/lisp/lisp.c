@@ -220,18 +220,25 @@ void initlisp(void)
 	int i;
 
 	static char *BI[] = {
-		"CAR","CDR","CONS","LAMBDA","SPECIAL","SETQ","ATOM","NUMBERP","QUOTE",
-		"LIST","DO","COND","PLUS","TIMES","DIFFERENCE","QUOTIENT","POWER",
-		"FLOOR","MINUS","LESSP","GREATERP","EVAL","EQ","AND","OR","SUM","PRODUCT",
-		"PUTPLIST","GETPLIST","READ","PRINT","PRINTCR","MKATOM","BODY","RPLACA",
-		"RPLACD","TSETQ", "NULL", "SET"
+		"CAR",      "CDR",     "CONS",     "LAMBDA",   "SPECIAL",
+		"SETQ",     "ATOM",    "NUMBERP",  "QUOTE",    "LIST",
+		"DO",       "COND",    "PLUS",     "TIMES",    "DIFFERENCE",
+		"QUOTIENT", "POWER",   "FLOOR",    "MINUS",    "LESSP",
+		"GREATERP", "EVAL",    "EQ",       "AND",      "OR",
+		"SUM",      "PRODUCT", "PUTPLIST", "GETPLIST", "READ",
+		"PRINT",    "PRINTCR", "MKATOM",   "BODY",     "RPLACA",
+		"RPLACD",   "TSETQ",   "NULL",     "SET"
 	};
 
 	static char BItype[] = {
-		10,10,10,11,11,11,10,10,11,10,
-		10,11,10,10,10,10,10,10,10,10,
-		10,10,10,11,11,10,10,10,10,10,
-		10,10,10,10,10,10,11,10,11
+		10, 10, 10, 11, 11,
+		11, 10, 10, 11, 10,
+		10, 11, 10, 10, 10,
+		10, 10, 10, 10, 10,
+		10, 10, 10, 11, 11,
+		10, 10, 10, 10, 10,
+		10, 10, 10, 10, 10,
+		10, 11, 10, 11
 	};
 
 	/* Number of builtin's in BI[] and BItype[] above. */
