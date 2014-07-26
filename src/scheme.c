@@ -11,68 +11,48 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+typedef void *value;
+
 typedef enum {
-	NO_TYPE     = 0,
-	FIXNUM_TYPE = 1
-} object_type;
+	NO_TAG  = 0x00,
+	INT_TAG = 0x01
+} value_tag;
 
-typedef int32_t fixnum;
+#define VALUE_TAG_MASK 0x07
 
-typedef struct {
-	object_type type;
-	union {
-		struct {
-			fixnum value;
-		} fixnum;
-	} data;
-} object;
-
-object *make_object()
+value set_tag(value_tag tag, void *val)
 {
-	object *obj;
-
-	if (!(obj = malloc(sizeof(object)))) {
-		halt("Out of memory\n");
-	}
-	obj->type = NO_TYPE;
-	return obj;
+	assert((((uint64_t)val) & VALUE_TAG_MASK) == 0);
+	return (value)((((uint64_t)val) & ~VALUE_TAG_MASK) | tag);
 }
 
-object *make_fixnum(fixnum val)
+void *clear_tag(value val)
 {
-	object *obj;
+	return (void *)((uint64_t)val & ~VALUE_TAG_MASK);
+}
 
-	obj = make_object();
-	obj->type = FIXNUM_TYPE;
-	obj->data.fixnum.value = val;
-	return obj;
+value_tag get_tag(value val)
+{
+	return ((uint64_t)val) & VALUE_TAG_MASK;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef void *tagged_object;
-
-typedef enum {
-	NO_TAG     = 0x00,
-	FIXNUM_TAG = 0x01
-} object_tag;
-
-#define OBJECT_TAG_MASK 0x07
-
-tagged_object tag_object(object_tag tag, void *obj)
+value make_int(int n)
 {
-	assert((((uint64_t)obj) & OBJECT_TAG_MASK) == 0);
-	return (tagged_object)((((uint64_t)obj) & ~OBJECT_TAG_MASK) | tag);
+	int *val;
+
+	if (!(val = malloc(sizeof(int)))) {
+		halt("Out of memory\n");
+	}
+	*val = n;
+	return set_tag(INT_TAG, val);
 }
 
-void *untag_object(tagged_object obj)
+int get_int(value val)
 {
-	return (void *)((uint64_t)obj & ~OBJECT_TAG_MASK);
-}
-
-object_tag get_tag(tagged_object obj)
-{
-	return ((uint64_t)obj) & OBJECT_TAG_MASK;
+	assert(get_tag(val) == INT_TAG);
+	return *(int *)(clear_tag(val));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,9 +61,9 @@ object_tag get_tag(tagged_object obj)
 
 typedef struct {
 	size_t size;
-	tagged_object *base;
-	tagged_object *top;
-	tagged_object *limit;
+	value *base;
+	value *top;
+	value *limit;
 } stack;
 
 stack *data_stack;
@@ -97,7 +77,7 @@ stack *make_stack()
 		halt("Out of memory\n");
 	}
 	stk->size = INIT_STACK_SIZE;
-	if (!(stk->base = malloc(stk->size * sizeof(object *)))) {
+	if (!(stk->base = malloc(stk->size * sizeof(value)))) {
 		halt("Out of memory\n");
 	}
 	stk->top = stk->base;
@@ -105,20 +85,20 @@ stack *make_stack()
 	return stk;
 }
 
-void push_object(stack *stk, tagged_object obj)
+void push_value(value val, stack *stk)
 {
 	if (stk->top == stk->limit) {
 		stk->size *= 2;
-		if (!(stk->base = realloc(stk->base, stk->size * sizeof(object *)))) {
+		if (!(stk->base = realloc(stk->base, stk->size * sizeof(value)))) {
 			halt("Out of memory\n");
 		}
 		stk->top = stk->base + stk->size / 2;
 		stk->limit = stk->base + stk->size;
 	}
-	*(stk->top)++ = obj;
+	*(stk->top)++ = val;
 }
 
-tagged_object pop_object(stack *stk)
+value pop_value(stack *stk)
 {
 	if (stk->top == stk->base) {
 		halt("Stack underflow\n");
@@ -159,23 +139,23 @@ void skip_spaces(FILE *in)
 	}
 }
 
-object *read_fixnum(FILE *in, int sign)
+value read_int(FILE *in, int sign)
 {
 	int c;
-	fixnum val = 0;
-	object *obj;
+	int n = 0;
+	value val;
 
 	while (isdigit((c = getc(in)))) {
-		val = (val * 10) + digittoint(c);
+		n = (n * 10) + digittoint(c);
 	}
-	val *= sign;
+	n *= sign;
 	ungetc(c, in);
-	obj = make_fixnum(val);
-	push_object(data_stack, tag_object(FIXNUM_TAG, obj));
-	return obj;
+	val = make_int(n);
+	push_value(val, data_stack);
+	return val;
 }
 
-object *read(FILE *in)
+value read(FILE *in)
 {
 	int c;
 	int sign = 1;
@@ -191,7 +171,7 @@ object *read(FILE *in)
 		} else {
 			ungetc(c, in);
 		}
-		return read_fixnum(in, sign);
+		return read_int(in, sign);
 	}
 	fprintf(stderr, "Unexpected character '%c'\n", c);
 	exit(1);
@@ -199,21 +179,21 @@ object *read(FILE *in)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-object *eval(object *expr)
+value eval(value expr)
 {
 	return expr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void write(object *obj)
+void write(value val)
 {
-	switch (obj->type) {
-	case FIXNUM_TYPE:
-		printf("%d", obj->data.fixnum.value);
+	switch (get_tag(val)) {
+	case INT_TAG:
+		printf("%d", get_int(val));
 		break;
 	default:
-		fprintf(stderr, "Unexpected object type %d\n", obj->type);
+		fprintf(stderr, "Unexpected value tag %d\n", get_tag(val));
 		exit(1);
 	}
 }
