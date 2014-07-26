@@ -395,13 +395,13 @@ int32 e(void)
 	char nc[50], *np;
 	struct Insave *tb;
 
-#define OPENP      '('
-#define CLOSEP     ')'
-#define BLANK      ' '
-#define SINGLEQ    '\''
-#define DOT        '.'
-#define PLUS       '+'
-#define MINUS      '-'
+#define OPENP_TOKEN   '('
+#define CLOSEP_TOKEN  ')'
+#define BLANK_TOKEN   ' '
+#define SINGLEQ_TOKEN '\''
+#define DOT_TOKEN     '.'
+#define PLUS_TOKEN    '+'
+#define MINUS_TOKEN   '-'
 #define CHVAL(c)   (c-'0')
 #define DIGIT(c)   ('0' <= (c) && (c) <= '9')
 #define TOUPPER(c) ((c) + 'A' - 'a')
@@ -414,15 +414,15 @@ int32 e(void)
 	}
 
 start:
-	while ((c = getgchar()) == BLANK) {
+	while ((c = getgchar()) == BLANK_TOKEN) {
 		; /* Remove blanks. */
 	}
 
-	if (c == OPENP) {
-		while (lookgchar() == BLANK) {
+	if (c == OPENP_TOKEN) {
+		while (lookgchar() == BLANK_TOKEN) {
 			getgchar(); /* Remove blanks. */
 		}
-		if (lookgchar() == CLOSEP) {
+		if (lookgchar() == CLOSEP_TOKEN) {
 			getgchar();
 			return (nilptr);
 		} else {
@@ -445,13 +445,13 @@ start:
 		}
 		goto start;
 	}
-	if (c == SINGLEQ) {
+	if (c == SINGLEQ_TOKEN) {
 		return (2);
 	}
-	if (c == CLOSEP) {
+	if (c == CLOSEP_TOKEN) {
 		return (4);
 	}
-	if (c == DOT) {
+	if (c == DOT_TOKEN) {
 		if (DIGIT(lookgchar())) {
 			sign = 1.0;
 			v = 0.0;
@@ -460,13 +460,13 @@ start:
 		return (3);
 	}
 	if (!(DIGIT(c) ||
-	      ((c == PLUS || c == MINUS) &&
-	       (DIGIT(lookgchar()) || lookgchar() == DOT)))
+	      ((c == PLUS_TOKEN || c == MINUS_TOKEN) &&
+	       (DIGIT(lookgchar()) || lookgchar() == DOT_TOKEN)))
 	) {
 		np = nc;
 		*np++= c; /* Put c in nc[0]. */
 		for (c = lookgchar();
-		     c != BLANK && c != DOT && c != OPENP && c != CLOSEP;
+		     c != BLANK_TOKEN && c != DOT_TOKEN && c != OPENP_TOKEN && c != CLOSEP_TOKEN;
 		     c = lookgchar()
 		) {
 			*(np++) = getgchar(); /* Add a character. */
@@ -502,7 +502,7 @@ start:
 		}
 		return(ordatom(nc));
 	}
-	if (c == MINUS) {
+	if (c == MINUS_TOKEN) {
 		v = 0.0;
 		sign = -1.0;
 	} else {
@@ -512,7 +512,7 @@ start:
 	while (DIGIT(lookgchar())) {
 		v = 10.0 * v + CHVAL(getgchar());
 	}
-	if (lookgchar() == DOT) {
+	if (lookgchar() == DOT_TOKEN) {
 		getgchar();
 		if (DIGIT(lookgchar())) {
 fraction:
@@ -582,7 +582,7 @@ int16 fgetline(char *s, int16 lim, FILE *stream)
 
 	for (i = 0; i < lim && (c = fgetc(stream)) != EOF && c != '\n'; ++i) {
 		if (c == TAB) {
-			c = BLANK;
+			c = BLANK_TOKEN;
 		}
 		s[i] = c;
 	}
