@@ -128,7 +128,6 @@ int32 numf;
 
 /* Variables used in file operations. */
 FILE *filep;
-FILE *logfilep;
 
 /* Forward references. */
 int32 seval(int32 i);
@@ -223,13 +222,11 @@ void error(char *msg)
 }
 
 
-/* Print the string s to the terminal, and also in the logfile, lisp.log */
+/* Print the string s to the terminal. */
 void ourprint(char *s)
 {
 	printf("%s", s);
 	fflush(stdout);
-	fprintf(logfilep, "%s", s);
-	fflush(logfilep);
 }
 
 
@@ -317,8 +314,6 @@ void initlisp(void)
 	   lispinit file: these are APPEND, REVERSE, EQUAL, APPLY, INTO,
 	   ONTO, NOT, NULL, ASSOC, NPROP, PUTPROP, GETPROP, and REMPROP */
 
-	/* Open the logfile. */
-	logfilep = fopen("lisp.log", "w");
 	ourprint("ENTERING THE LISP INTERPRETER\n");
 
 	/* Establish the input buffer and the input stream stack. */
@@ -453,7 +448,6 @@ start:
 	}
 	if (c == EOS) {
 		if (topInsave == NULL) {
-			fclose(logfilep);
 			exit(0);
 		}
 		/* Restore the previous input stream. */
@@ -581,10 +575,6 @@ sprompt:
 		}
 		if (fgetline(g, 200, filep) < 0) {
 			return;
-		}
-		if (filep == stdin) {
-			fprintf(logfilep, "%s\n", g);
-			fflush(logfilep);
 		}
 		if (*g == '/') {
 			goto sprompt;
