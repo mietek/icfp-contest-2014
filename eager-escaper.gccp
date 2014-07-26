@@ -32,13 +32,13 @@ LD 0 1         ; extract current world map
 CAR
 
 LD 0 1         ; load some entropy from the world
-CDR            ; extract ghosts
+CDR            ; use ghosts as the source
 CDR
 CAR
-CAR            ; take first from the list
-CDR            ; then his coords
-CAR
-CAR            ; and get the value of x
+LDC -314          ; seed value
+DUM 2
+LDF @gatherEntropy
+RAP 2
 
 LD 0 1         ; load world state ;
 CDR            ; lambda-man status
@@ -50,6 +50,7 @@ LD 0 1         ; load list of ghosts
 CDR
 CDR
 CAR
+
 
 LDF @chooseNewDirection
 AP 6
@@ -111,7 +112,7 @@ RTN
 
 LD 0 0         ; previous direction ; @rotate
 LD 0 1         ; rotation type
-TSEL @counterClockWise @clockWise
+TSEL @clockWise @counterClockWise
 LDC 2          ; @counterClockWise
 ADD
 LDC 1          ; @clockWise
@@ -269,6 +270,36 @@ LD 0 1
 CDR
 LDF @checkGhostsOnPosition
 TAP 2
+
+LD 0 0         ; list of remaining ghosts ; @gatherEntropy
+ATOM
+TSEL @noMoreGhostsForEntropy @entropyFromNextGhost
+LD 0 1         ; accumulated entropy ; @noMoreGhostsForEntropy
+RTN
+LD 0 0         ; @entropyFromNextGhost
+CDR
+LD 0 0
+CAR
+CDR            ; x position
+CAR
+CAR
+LD 0 0
+CAR
+CDR            ; y position
+CAR
+CDR
+ADD
+LD 0 0
+CAR
+CDR            ; direction
+CDR
+ADD
+LD 0 1
+ADD
+LDF @gatherEntropy
+TAP 2
+
+
 
 LD 0 1         ; the map ; @followDots
 LD 0 2         ; l-man position
