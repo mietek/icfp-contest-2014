@@ -109,7 +109,7 @@ RTN
 LD 0 0         ; no ghosts around, no direction change ; @noEscape
 RTN
 
-LD 0 0         ; @potentialGhostPositions
+LD 0 0         ; direction ; @potentialGhostPositions
 LDC 0
 CEQ
 TSEL @positionsAbove @notUp
@@ -217,6 +217,22 @@ CAR
 LD 0 0
 LDF @comparePairs
 AP 2
+LD 0 1         ; check his next position too
+CAR
+CDR            ; take his direction
+CDR
+LD 0 1
+CAR
+CDR            ; and position
+CAR
+LDF @potentialGhostPositions
+AP 2           ; (after 2 moves, after 1 move)
+CDR            ; only check one move ahead
+LD 0 0
+LDF @comparePairs
+AP 2
+ADD
+
 TSEL @thereIsGhost @checkTheRest
 LDC 1          ; @thereIsGhost
 RTN
