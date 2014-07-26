@@ -9,7 +9,7 @@
    returns a typed pointer to its result.  SWRITE takes as input the
    typed pointer returned from SEVAL and prints out the result.
 
-   LISP input lines beginning with a "/" are comment lines.  Indirect
+   LISP input lines beginning with a ";" are comment lines.  Indirect
    input text is taken from a file Z to replace the directive of the form
    "@Z".  SEVAL tracing can be turned on by using the directive "!trace",
    and turned off with the directive "!notrace". */
@@ -548,7 +548,7 @@ char lookgchar(void)
 }
 
 
-/* Read a line into g[]. A line starting with a "/" is a comment line. */
+/* Read a line into g[]. A line starting with a ";" is a comment line. */
 void fillg(void)
 {
 	while (pg >= pge) {
@@ -559,7 +559,7 @@ sprompt:
 		if (fgetline(g, 200, filep) < 0) {
 			return;
 		}
-		if (*g == '/') {
+		if (*g == ';') {
 			goto sprompt;
 		}
 		pg = g;

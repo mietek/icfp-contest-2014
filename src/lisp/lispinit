@@ -1,4 +1,4 @@
-/filename: 386 C:\lisp\lispinit              revision date: October 15, 1988
+;filename: 386 C:\lisp\lispinit              revision date: October 15, 1988
 
 (SETQ APPEND (LAMBDA (X Y) (COND ((EQ X NIL) Y)
    ((ATOM X) (CONS X Y))
