@@ -14,7 +14,7 @@ run: build/lisp
 
 test: build/lisp
 	cd build; ./lisp < ../test/lisp/fib.in > fib.out
-	diff test/lisp/fib.out build/fib.out
+	diff -u test/lisp/fib.out build/fib.out
 
 clean:
 	rm -rf build

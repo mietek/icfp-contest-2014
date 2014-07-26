@@ -35,9 +35,6 @@
 /* Struct to hold environment for longjump. */
 jmp_buf env;
 
-/* General output buffer pointer. */
-char *sout;
-
 /* The atom table. */
 struct Atomtable {
 	char name[16];
@@ -145,7 +142,6 @@ void fillg(void);
 int32 e(void);
 void error(char *s);
 int16 fgetline(char *s, int16 lim, FILE *stream);
-void ourprint(char *s);
 
 
 /* For debugging to see if we are leaking list-nodes.
@@ -153,10 +149,9 @@ void ourprint(char *s);
    This function can be called from within the main loop. */
 void spacerpt(int32 r)
 {
-	char s[60];
 	int16 t;
 
-	sprintf(s,"entering spacerpt: r=%x, numf=%d\n", r, numf); ourprint(s);
+	printf("entering spacerpt: r=%x, numf=%d\n", r, numf);
 
 	t = type(r);
 	if (namedfsf(t)) {
@@ -170,7 +165,7 @@ void spacerpt(int32 r)
 	gcmark(r);
 	gc();
 
-	sprintf(s,"leaving spacerpt: numf=%d\n", numf); ourprint(s);
+	printf("leaving spacerpt: numf=%d\n", numf);
 }
 
 
@@ -185,7 +180,7 @@ int main(void)
 	/* Calling error() returns to here by longjmp(). */
 
 	for (;;) {
-		ourprint("\n");
+		putchar('\n');
 		prompt = '*';
 		r = sread();
 		r = seval(r);
@@ -214,19 +209,9 @@ void error(char *msg)
 		}
 	}
 
-	ct= 0;
-	ourprint("::");
-	ourprint(msg);
-	ourprint("\n");
-	longjmp(env,-1);
-}
-
-
-/* Print the string s to the terminal. */
-void ourprint(char *s)
-{
-	printf("%s", s);
-	fflush(stdout);
+	ct = 0;
+	printf("::%s\n", msg);
+	longjmp(env, -1);
 }
 
 
@@ -253,9 +238,6 @@ void initlisp(void)
 
 	/* Number of builtin's in BI[] and BItype[] above. */
 	#define NBI 39
-
-	/* Allocate a global character array for message.s */
-	sout= (char *)calloc(80, sizeof(char));
 
 	/* Allocate the input string. */
 	g = (char *)calloc(202, sizeof(char));
@@ -314,7 +296,7 @@ void initlisp(void)
 	   lispinit file: these are APPEND, REVERSE, EQUAL, APPLY, INTO,
 	   ONTO, NOT, NULL, ASSOC, NPROP, PUTPROP, GETPROP, and REMPROP */
 
-	ourprint("ENTERING THE LISP INTERPRETER\n");
+	printf("ENTERING THE LISP INTERPRETER\n");
 
 	/* Establish the input buffer and the input stream stack. */
 	topInsave = NULL;
@@ -393,7 +375,8 @@ next:
 		return (k);
 	}
 	error("bad syntax");
-	/* TODO: Never reached. */
+
+	/* Shut up the compiler. */
 	return 0;
 }
 
@@ -570,8 +553,7 @@ void fillg(void)
 	while (pg >= pge) {
 sprompt:
 		if (filep == stdin) {
-			sprintf(sout, "%c", prompt);
-			ourprint(sout);
+			putchar(prompt);
 		}
 		if (fgetline(g, 200, filep) < 0) {
 			return;
@@ -636,7 +618,7 @@ int32 numatom(double r)
 	if (nf < 0) {
 		gc();
 		if (nf < 0) {
-			error("The number table is full");
+			error("number table is full");
 		}
 	}
 	nx[j] = nf;
@@ -696,49 +678,44 @@ void swrite(int32 j)
 			j= B(j);
 		}
 		listsw = (B(j) == nilptr);
-		ourprint("(");
+		putchar('(');
 		while (listsw) {
 			swrite(A(i));
 			if ((i= B(i)) == nilptr) {
 				goto close;
 			}
-			ourprint(" ");
+			putchar(' ');
 		}
 		swrite(A(i));
-		ourprint(" . ");
+		printf(" . ");
 		swrite(B(i));
 close:
-		ourprint(")");
+		putchar(')');
 		break;
 
 	case 8:
-		ourprint(Atab[i].name);
+		printf("%s", Atab[i].name);
 		break;
 	case 9:
-		sprintf(sout, "%-g", Ntab[i].num);
-		ourprint(sout);
+		printf("%-g", Ntab[i].num);
 		break;
 	case 10:
-		sprintf(sout, "{builtin function: %s}", Atab[i].name);
-		ourprint(sout);
+		printf("{builtin function: %s}", Atab[i].name);
 		break;
 	case 11:
-		sprintf(sout, "{builtin special form: %s}", Atab[i].name);
-		ourprint(sout);
+		printf("{builtin special form: %s}", Atab[i].name);
 		break;
 	case 12:
-		sprintf(sout, "{user defined function: %s}", Atab[i].name);
-		ourprint(sout);
+		printf("{user defined function: %s}", Atab[i].name);
 		break;
 	case 13:
-		sprintf(sout, "{user defined special form: %s}", Atab[i].name);
-		ourprint(sout);
+		printf("{user defined special form: %s}", Atab[i].name);
 		break;
 	case 14:
-		ourprint("{unnamed function}");
+		printf("{unnamed function}");
 		break;
 	case 15:
-		ourprint("{unnamed special form}");
+		printf("{unnamed special form}");
 		break;
 	}
 }
@@ -752,13 +729,12 @@ void traceprint(int32 v, int16 osw)
 {
 	if (tracesw > 0) {
 		if (osw == 1) {
-			sprintf(sout, "%d result:", ct--);
+			printf("%d result:", ct--);
 		} else {
-			sprintf(sout, "%d seval:", ++ct);
+			printf("%d seval:", ++ct);
 		}
-		ourprint(sout);
 		swrite(v);
-		ourprint("\n");
+		putchar('\n');
 	}
 }
 
@@ -813,8 +789,8 @@ int32 seval(int32 p)
 		}
 
 		if ((t = type(Atab[j].L)) == 1) {
-			sprintf(sout, "%s is undefined\n", Atab[j].name);
-			error(sout);
+			printf("%s", Atab[j].name);
+			error(" is undefined");
 		}
 
 		if (namedfsf(t)) {
@@ -835,7 +811,7 @@ int32 seval(int32 p)
 	tracesw++;
 	ty = type(f);
 	if (!fctform(ty)) {
-		error(" invalid function or special form");
+		error("invalid function or special form");
 	}
 	f = ptrv(f);
 	if (!unnamedfsf(ty)) {
@@ -1134,39 +1110,42 @@ doit:
 			break;
 
 		case 30: /* READ */
-			ourprint("\n!");
+			printf("\n!");
 			prompt = EOS;
 			v = sread();
 			break;
 
 		case 31: /* PRINT */
 			if (p == nilptr) {
-				ourprint(" ");
+				putchar(' ');
 			} else {
 				while (p != nilptr) {
 					swrite(A(p));
-					ourprint(" ");
-					p= B(p);
+					putchar(' ');
+					p = B(p);
 				}
 			}
 			break;
 
 		case 32: /* PRINTCR */
 			if (p == nilptr) {
-				ourprint("\n");
+				putchar('\n');
 			} else {
 				while (p != nilptr) {
 					swrite(A(p));
-					ourprint("\n");
+					putchar('\n');
 					p = B(p);
 				}
 			}
 			break;
 
 		case 33: /* MKATOM */
-			strcpy(sout, Atab[ptrv(E1)].name);
-			strcat(sout, Atab[ptrv(E2)].name);
-			v = ordatom(sout);
+			{
+				char tmpbuf[80];
+				strcpy(tmpbuf, Atab[ptrv(E1)].name);
+				strcat(tmpbuf, Atab[ptrv(E2)].name);
+				v = ordatom(tmpbuf);
+			}
 			break;
 
 		case 34: /* BODY */
@@ -1217,7 +1196,8 @@ doit:
 			f = seval(U1);
 			goto assign;
 
-		default: error("dryrot: bad builtin case number");
+		default:
+			error("bad built-in case number");
 		} /* End of switch cases. */
 
 	} /* End builtins. */
