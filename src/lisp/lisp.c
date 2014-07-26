@@ -14,9 +14,6 @@
    "@Z".  SEVAL tracing can be turned on by using the directive "!trace",
    and turned off with the directive "!notrace". */
 
-#define int16 int
-#define int32 int
-
 #include <ctype.h>
 #include <math.h>
 #include <setjmp.h>
@@ -39,9 +36,9 @@ jmp_buf env;
 /* The atom table. */
 struct Atomtable {
 	char name[16];
-	int32 L;
-	int32 bl;
-	int32 plist;
+	int L;
+	int bl;
+	int plist;
 } Atab[n];
 
 /* The number table is used for storing floating point numbers.  The
@@ -49,14 +46,14 @@ struct Atomtable {
    table free space list. */
 union Numbertable {
 	double num;
-	int16 nlink;
+	int nlink;
 } Ntab[n];
 
 /* The number hash index table. */
-int16 nx[n];
+int nx[n];
 
 /* The number table free space list head pointer. */
-int16 nf = -1;
+int nf = -1;
 
 /* The number table mark array nmark is used in garbage collection to
    mark words not to be returned to the free space list.
@@ -65,15 +62,15 @@ char nmark[n];
 
 /* The list area. */
 struct Listarea {
-	int32 car;
-	int32 cdr;
+	int car;
+	int cdr;
 } *P;
 
 /* The list area free space list head pointer. */
-int16 fp = -1;
+int fp = -1;
 
 /* The put-back variable. */
-int32 pb = 0;
+int pb = 0;
 
 /* The input string and related pointers. */
 char *g, *pg, *pge;
@@ -90,13 +87,13 @@ struct Insave {
 char prompt;
 
 /* seval depth count and trace switch. */
-int16 ct = 0, tracesw = 0;
+int ct = 0, tracesw = 0;
 
 /* Global ordinary atom typed-pointers. */
-int32 nilptr, tptr, currentin, eaL, quoteptr, sk, traceptr;
+int nilptr, tptr, currentin, eaL, quoteptr, sk, traceptr;
 
 /* Number of free list-nodes. */
-int32 numf;
+int numf;
 
 /* Global macros. */
 #define A(j)           P[j].car
@@ -128,29 +125,29 @@ int32 numf;
 FILE *filep;
 
 /* Forward references. */
-int32 seval(int32 i);
+int seval(int i);
 void initlisp(void);
-int32 sread(void);
-void swrite(int32 i);
-int32 newloc(int32 x, int32 y);
-int32 numatom (double r);
-int32 ordatom (char *s);
+int sread(void);
+void swrite(int i);
+int newloc(int x, int y);
+int numatom (double r);
+int ordatom (char *s);
 void gc(void);
-void gcmark(int32 p);
+void gcmark(int p);
 char getgchar(void);
 char lookgchar(void);
 void fillg(void);
-int32 e(void);
+int e(void);
 void error(char *s);
-int16 fgetline(char *s, int16 lim, FILE *stream);
+int fgetline(char *s, int lim, FILE *stream);
 
 
 /* For debugging to see if we are leaking list-nodes.
    We are to protect r from garbage-collection.
    This function can be called from within the main loop. */
-void spacerpt(int32 r)
+void spacerpt(int r)
 {
-	int16 t;
+	int t;
 
 	printf("entering spacerpt: r=%x, numf=%d\n", r, numf);
 
@@ -173,7 +170,7 @@ void spacerpt(int32 r)
 /* The main read/eval/print loop. */
 int main(void)
 {
-	int32 r;
+	int r;
 
 	initlisp();
 
@@ -194,7 +191,7 @@ int main(void)
 /* Type-out the message msg and do longjmp() to top level. */
 void error(char *msg)
 {
-	int32 i, t;
+	int i, t;
 
 	/* Discard all input S-expression and argument list stacks. */
 	Atab[currentin].L = Atab[eaL].L = Atab[sk].L = nilptr;
@@ -220,7 +217,7 @@ void error(char *msg)
    the atom table.  It also initializes the number table and list area. */
 void initlisp(void)
 {
-	int32 i;
+	int i;
 
 	static char *BI[] = {
 		"CAR","CDR","CONS","LAMBDA","SPECIAL","SETQ","ATOM","NUMBERP","QUOTE",
@@ -258,7 +255,7 @@ void initlisp(void)
 	/* Install typed-case numbers for builtin functions and and special forms
 	   into the atom table. */
 	for (i= 0; i<NBI; i++) {
-		Atab[ptrv(ordatom(BI[i]))].L = tp((((int32)BItype[i]) << 28), (i + 1));
+		Atab[ptrv(ordatom(BI[i]))].L = tp((((int)BItype[i]) << 28), (i + 1));
 	}
 
 	nilptr = ordatom("NIL");
@@ -323,9 +320,9 @@ void initlisp(void)
 
    SREAD constructs an S-expression and returns a typed pointer to it
    as its result. */
-int32 sread(void)
+int sread(void)
 {
-	int32 j, k, t, c;
+	int j, k, t, c;
 
 	if ((c = e()) <= 0) {
 		return (c);
@@ -389,10 +386,10 @@ next:
       4 if the token is ')'
    or a negative typed-pointer to an entry in the atom table or the number
    table. */
-int32 e(void)
+int e(void)
 {
 	double v, f, k, sign;
-	int32 t, c;
+	int t, c;
 	char nc[50], *np;
 	struct Insave *tb;
 
@@ -493,8 +490,8 @@ start:
 
 		/* Convert the string nc to upper case. */
 		for (np = nc; *np != EOS; np++) {
-			if (islower((int16)*np)) {
-				*np = (char)toupper((int16)*np);
+			if (islower((int)*np)) {
+				*np = (char)toupper((int)*np);
 			}
 		}
 		return(ordatom(nc));
@@ -571,9 +568,9 @@ sprompt:
    (up to lim chars).  The function returns the length of this string. If there
    are no characters but just EOF, it returns -1 (EOF) as the length. There is
    no deblanking except to drop CR's and LF's ('\n') and map TABs to blanks. */
-int16 fgetline(char *s, int16 lim, FILE *stream)
+int fgetline(char *s, int lim, FILE *stream)
 {
-	int16 c, i;
+	int c, i;
 
 #define TAB 9
 
@@ -595,11 +592,11 @@ int16 fgetline(char *s, int16 lim, FILE *stream)
 /* The number r is looked-up in the number table and stored there as a lazy
    number atom if it is not already present.  The typed-pointer to this number
    atom is returned. */
-int32 numatom(double r)
+int numatom(double r)
 {
-	int32 j;
+	int j;
 
-#define hashnum(r) ((*(1 + (int32 *)(&r)) & 0x7fffffff) % n)
+#define hashnum(r) ((*(1 + (int *)(&r)) & 0x7fffffff) % n)
 
 	j = hashnum(r);
 
@@ -631,9 +628,9 @@ ret:
    in the atom table and stored there as an atom with the value undefined if it
    is not already present.  The typed-pointer to this ordinary atom is then
    returned. */
-int32 ordatom (char *s)
+int ordatom (char *s)
 {
-	int32 j, c;
+	int j, c;
 
 #define hashname(s) (abs((s[0] << 16) + (s[j - 1] << 8) + j) % n)
 
@@ -662,10 +659,10 @@ ret:
 
 
 /* The S-expression pointed to by j is typed out. */
-void swrite(int32 j)
+void swrite(int j)
 {
-	int32 i;
-	int16 listsw;
+	int i;
+	int listsw;
 
 	i = ptrv(j);
 	switch (type(j)) {
@@ -720,9 +717,9 @@ close:
 
 /* This function prints out the input and the result for each successive
    invocation of seval() when tracing is requested. */
-void traceprint(int32 v, int16 osw)
-/* int32 v; the object to be printed.
-   int16 osw; 1 for seval() output, 0 for seval() input. */
+void traceprint(int v, int osw)
+/* int v; the object to be printed.
+   int osw; 1 for seval() output, 0 for seval() input. */
 {
 	if (tracesw > 0) {
 		if (osw == 1) {
@@ -738,12 +735,12 @@ void traceprint(int32 v, int16 osw)
 
 /* Evaluate the S-expression pointed to by the typed-pointer p; construct the
    result value as necessary; return a typed-pointer to the result. */
-int32 seval(int32 p)
+int seval(int p)
 {
-	int32 ty, t, v, j, f, fa, na;
+	int ty, t, v, j, f, fa, na;
 	/* I think t can be static. also fa and j? Test later. */
 
-	int32 *endeaL;
+	int *endeaL;
 	static double s;
 
 #define U1 A(p)
@@ -1212,9 +1209,9 @@ doit:
 
 /* Allocates and loads the fields of a new location in the list area, with
    a()= X, b()= Y. The index of the new location is returned. */
-int32 newloc(int32 x, int32 y)
+int newloc(int x, int y)
 {
-	int32 j;
+	int j;
 
 	if (fp < 0) {
 		gcmark(x);
@@ -1236,7 +1233,7 @@ int32 newloc(int32 x, int32 y)
 /* Garbage collector for number table and listarea. */
 void gc(void)
 {
-	int32 i, t;
+	int i, t;
 
 #define marked(p)    ((A(p) & 0x08000000) != 0)
 #define marknode(p)  (A(p) |= 0x08000000)
@@ -1284,9 +1281,9 @@ void gc(void)
 
 
 /* Mark the S-expression given by the typed-pointer p. */
-void gcmark(int32 p)
+void gcmark(int p)
 {
-	static int32 s, t;
+	static int s, t;
 
 #define marknum(t, p) if ((t) == 9) nmark[ptrv(p)] = 1
 #define listp(t)      ((t) == 0 || (t) > 11)
