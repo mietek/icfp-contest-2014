@@ -222,8 +222,8 @@ void initlisp(void)
 	static char *BI[] = {
 		"CAR",      "CDR",     "CONS",     "LAMBDA",   "SPECIAL",
 		"SETQ",     "ATOM",    "NUMBERP",  "QUOTE",    "LIST",
-		"DO",       "COND",    "PLUS",     "TIMES",    "DIFFERENCE",
-		"QUOTIENT", "POWER",   "FLOOR",    "MINUS",    "LESSP",
+		"DO",       "COND",    "ADD",      "MUL",      "SUB",
+		"DIV",      "POWER",   "FLOOR",    "MINUS",    "LESSP",
 		"GREATERP", "EVAL",    "EQ",       "AND",      "OR",
 		"SUM",      "PRODUCT", "PUTPLIST", "GETPLIST", "READ",
 		"PRINT",    "PRINTCR", "MKATOM",   "BODY",     "RPLACA",
@@ -1021,19 +1021,19 @@ doit:
 			}
 			break;
 
-		case 13: /* PLUS */
+		case 13: /* ADD */
 			v = numatom(Ntab[ptrv(E1)].num + Ntab[ptrv(E2)].num);
 			break;
 
-		case 14: /* TIMES */
+		case 14: /* MUL */
 			v = numatom(Ntab[ptrv(E1)].num * Ntab[ptrv(E2)].num);
 			break;
 
-		case 15: /* DIFFERENCE */
+		case 15: /* SUB */
 			v = numatom(Ntab[ptrv(E1)].num - Ntab[ptrv(E2)].num);
 			break;
 
-		case 16: /* QUOTIENT */
+		case 16: /* DIV */
 			v = numatom(Ntab[ptrv(E1)].num / Ntab[ptrv(E2)].num);
 			break;
 

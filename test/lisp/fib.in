@@ -1,5 +1,5 @@
 (SETQ FIB-REC (LAMBDA (N)
   (COND ((LESSP N 2) N)
-        (T (PLUS (FIB-REC (DIFFERENCE N 1)) (FIB-REC (DIFFERENCE N 2)))))))
+        (T (ADD (FIB-REC (SUB N 1)) (FIB-REC (SUB N 2)))))))
 
 (FIB-REC 16)
