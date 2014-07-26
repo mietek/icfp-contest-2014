@@ -17,6 +17,7 @@
 #define int16 int
 #define int32 int
 
+#include <ctype.h>
 #include <math.h>
 #include <setjmp.h>
 #include <stdio.h>
@@ -402,10 +403,6 @@ int32 e(void)
 #define DOT_TOKEN     '.'
 #define PLUS_TOKEN    '+'
 #define MINUS_TOKEN   '-'
-#define CHVAL(c)   (c-'0')
-#define DIGIT(c)   ('0' <= (c) && (c) <= '9')
-#define TOUPPER(c) ((c) + 'A' - 'a')
-#define ISLOWER(c) ((c) >= 'a' && (c) <= 'z')
 
 	if (pb != 0) {
 		t = pb;
@@ -452,16 +449,16 @@ start:
 		return (4);
 	}
 	if (c == DOT_TOKEN) {
-		if (DIGIT(lookgchar())) {
+		if (isdigit(lookgchar())) {
 			sign = 1.0;
 			v = 0.0;
 			goto fraction;
 		}
 		return (3);
 	}
-	if (!(DIGIT(c) ||
+	if (!(isdigit(c) ||
 	      ((c == PLUS_TOKEN || c == MINUS_TOKEN) &&
-	       (DIGIT(lookgchar()) || lookgchar() == DOT_TOKEN)))
+	       (isdigit(lookgchar()) || lookgchar() == DOT_TOKEN)))
 	) {
 		np = nc;
 		*np++= c; /* Put c in nc[0]. */
@@ -496,8 +493,8 @@ start:
 
 		/* Convert the string nc to upper case. */
 		for (np = nc; *np != EOS; np++) {
-			if (ISLOWER((int16)*np)) {
-				*np = (char)TOUPPER((int16)*np);
+			if (islower((int16)*np)) {
+				*np = (char)toupper((int16)*np);
 			}
 		}
 		return(ordatom(nc));
@@ -506,22 +503,22 @@ start:
 		v = 0.0;
 		sign = -1.0;
 	} else {
-		v = CHVAL(c);
+		v = digittoint(c);
 		sign = 1.0;
 	}
-	while (DIGIT(lookgchar())) {
-		v = 10.0 * v + CHVAL(getgchar());
+	while (isdigit(lookgchar())) {
+		v = 10.0 * v + digittoint(getgchar());
 	}
 	if (lookgchar() == DOT_TOKEN) {
 		getgchar();
-		if (DIGIT(lookgchar())) {
+		if (isdigit(lookgchar())) {
 fraction:
 			k = 1.0;
 			f = 0.0;
 			do {
 				k = 10. * k;
-				f = 10. * f + CHVAL(getgchar());
-			} while (DIGIT(lookgchar()));
+				f = 10. * f + digittoint(getgchar());
+			} while (isdigit(lookgchar()));
 			v = v + f / k;
 		}
 	}
