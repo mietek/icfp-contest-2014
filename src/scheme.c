@@ -48,23 +48,6 @@ object *make_fixnum(fixnum val)
 	return obj;
 }
 
-object_type get_type(object *obj)
-{
-	assert(obj->type != NO_TYPE);
-	return obj->type;
-}
-
-int is_fixnum(object *obj)
-{
-	return get_type(obj) == FIXNUM_TYPE;
-}
-
-fixnum get_fixnum(object *obj)
-{
-	assert(is_fixnum(obj));
-	return obj->data.fixnum.value;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef void *tagged_object;
@@ -135,12 +118,6 @@ void push_object(stack *stk, tagged_object obj)
 	*(stk->top)++ = obj;
 }
 
-void push_fixnum(stack *stk, object *obj)
-{
-	assert(is_fixnum(obj));
-	push_object(stk, tag_object(FIXNUM_TAG, obj));
-}
-
 tagged_object pop_object(stack *stk)
 {
 	if (stk->top == stk->base) {
@@ -194,7 +171,7 @@ object *read_fixnum(FILE *in, int sign)
 	val *= sign;
 	ungetc(c, in);
 	obj = make_fixnum(val);
-	push_fixnum(data_stack, obj);
+	push_object(data_stack, tag_object(FIXNUM_TAG, obj));
 	return obj;
 }
 
@@ -231,12 +208,12 @@ object *eval(object *expr)
 
 void write(object *obj)
 {
-	switch (get_type(obj)) {
+	switch (obj->type) {
 	case FIXNUM_TYPE:
-		printf("%d", get_fixnum(obj));
+		printf("%d", obj->data.fixnum.value);
 		break;
 	default:
-		fprintf(stderr, "Unexpected object type %d\n", get_type(obj));
+		fprintf(stderr, "Unexpected object type %d\n", obj->type);
 		exit(1);
 	}
 }
