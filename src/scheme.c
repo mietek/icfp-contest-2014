@@ -14,8 +14,9 @@
 typedef void *value;
 
 typedef enum {
-	NO_TAG  = 0x00,
-	INT_TAG = 0x01
+	NO_TAG   = 0x00,
+	INT_TAG  = 0x01,
+	CONS_TAG = 0x02
 } value_tag;
 
 #define VALUE_TAG_MASK 0x07
@@ -53,6 +54,37 @@ int get_int(value val)
 {
 	assert(get_tag(val) == INT_TAG);
 	return *(int *)(clear_tag(val));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+	value car;
+	value cdr;
+} cons;
+
+value make_cons(value car, value cdr)
+{
+	cons *val;
+
+	if (!(val = malloc(sizeof(cons)))) {
+		halt("Out of memory\n");
+	}
+	val->car = car;
+	val->cdr = cdr;
+	return set_tag(CONS_TAG, val);
+}
+
+value get_cons_car(value val)
+{
+	assert(get_tag(val) == CONS_TAG);
+	return ((cons *)(clear_tag(val)))->car;
+}
+
+value get_cons_cdr(value val)
+{
+	assert(get_tag(val) == CONS_TAG);
+	return ((cons *)(clear_tag(val)))->cdr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
