@@ -4,9 +4,13 @@ class Preprocessor
   end
 
   def output
-    lines.map do |line|
+    non_empty_lines.map do |line|
       if line =~ /^LDF @(\w+)$/
         "LDF #{line_number_of($1)}\n"
+      elsif line =~ /^TSEL @(\w+) @(\w+)$/
+        "TSEL #{line_number_of($1)} #{line_number_of($2)}\n"
+      elsif line =~ /^SEL @(\w+) @(\w+)$/
+        "SEL #{line_number_of($1)} #{line_number_of($2)}\n"
       else
         line
       end
