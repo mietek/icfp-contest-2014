@@ -1,0 +1,65 @@
+LDC 0          ; initial state
+LDF @stepFunction
+CONS
+RTN
+
+LDC 0          ; @stepFunction
+LDC 3          ; start checking moves starting with 3
+LDC 0          ; placeholder for best score
+LDC 0          ; placeholder for current score
+LDC 0          ; placholder for best move
+LD 0 1         ; the world state
+DUM 5
+LDF @evaluateMoves
+AP 5           ; return the best move
+RTN
+
+LD 0 0         current direction to check ; @evaluateMoves
+LDC 5          ; iterations count for evaluateMove
+LDC 0          ; accumulator for cumulative score of iterations
+LD 0 4         ; pass the current world state
+DUM 4
+LDF @evaluateMove
+RAP 4
+ST 0 2
+LD 0 2
+LD 0 1
+CGT
+TSEL @gotBetterScore @gotWorseScore
+LD 0 2         ; @gotBetterScore
+ST 0 1
+LD 0 0
+ST 0 3
+LD 0 0         ; @gotWorseScore
+TSEL @checkNextMove @returnBestMove
+LD 0 0         ; @checkNextMove
+LDC -1
+ADD
+LD 0 1
+LD 0 2
+LD 0 3
+LD 0 4
+LDF @evaluateMoves
+TAP 5
+LD 0 3         ; @returnBestMove
+RTN
+
+LD 0 1         ; iterations count ; @evaluateMove
+TSEL @doAnotherIteration @returnCumulativeScore
+LD 0 2         ; @returnCumulativeScore
+RTN
+LD 0 2         ; @doAnotherIteration
+LD 0 0         ; direction
+LD 0 3         ; world
+LDF @runSimulation
+AP 2           ; get the new score
+ADD            ; add it to the previous one
+ST 0 2         ; and store for later
+LD 0 0         ; preparing arguments for recursive call
+LD 0 1
+LDC -1         ; decrease the iterations count
+ADD
+LD 0 2
+LD 0 3
+LDF @evaluateMove
+TAP 4
