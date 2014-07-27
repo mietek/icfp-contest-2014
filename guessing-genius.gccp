@@ -2,7 +2,11 @@ LDC 0          ; initial state
 LDF @stepFunction
 CONS
 RTN
-
+; ------------------------------------------------------------------------------
+; @stepFunction
+; arguments: AI State, World State
+; returns: direction of next move
+; ------------------------------------------------------------------------------
 LDC 0          ; @stepFunction
 LDC 3          ; start checking moves starting with 3
 LDC 0          ; placeholder for best score
@@ -14,6 +18,11 @@ LDF @evaluateMoves
 AP 5           ; return the best move
 RTN
 
+; ------------------------------------------------------------------------------
+; @evaluateMoves
+; arguments: direction, *best score, *current score, *best move, world
+; returns: direction
+; ------------------------------------------------------------------------------
 LD 0 0         current direction to check ; @evaluateMoves
 LDC 5          ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
@@ -44,6 +53,11 @@ TAP 5
 LD 0 3         ; @returnBestMove
 RTN
 
+; ------------------------------------------------------------------------------
+; @evaluateMove
+; arguments: direction, iterations count, *cumulative score, world
+; returns: cumulative score
+; ------------------------------------------------------------------------------
 LD 0 1         ; iterations count ; @evaluateMove
 TSEL @doAnotherIteration @returnCumulativeScore
 LD 0 2         ; @returnCumulativeScore
@@ -51,8 +65,11 @@ RTN
 LD 0 2         ; @doAnotherIteration
 LD 0 0         ; direction
 LD 0 3         ; world
+LDC 5          ; iterations count for single simulation
 LDF @runSimulation
-AP 2           ; get the new score
+AP 3           ; get the resulting world
+LDF @evaluateWorld
+AP 1           ; get the new score
 ADD            ; add it to the previous one
 ST 0 2         ; and store for later
 LD 0 0         ; preparing arguments for recursive call
@@ -63,3 +80,56 @@ LD 0 2
 LD 0 3
 LDF @evaluateMove
 TAP 4
+
+; ------------------------------------------------------------------------------
+; @runSimulation
+; arguments: direction, world, iteration
+; returns: world
+; ------------------------------------------------------------------------------
+LD 0 0         ; @runSimulation
+LD 0 1
+LDC 0
+LDC 0
+LDC 0
+LDC 0
+LDF @simulateMove
+AP 6           ; returns new world state
+ST 0 1         ; store it for later
+LD 0 2
+TSEL @doAnotherSimulationIteration @returnFinalWorld
+LD 0 1         ; @returnFinalWorld
+RTN
+LD 0 0         ; @doAnotherSimulationIteration
+LDF @generateNextRandomDirection
+LD 0 1         ; current world state
+LD 0 2         ; iterations count
+LDC -1         ; decreased by 1
+ADD
+LDF @runSimulation
+TAP 3
+
+; ------------------------------------------------------------------------------
+; @generateNextRandomDirection
+; arguments: direction
+; returns: new direction
+; ------------------------------------------------------------------------------
+LD 0 0         ; @generateNextRandomDirection
+RTN            ; to be implemented
+
+; ------------------------------------------------------------------------------
+; @simulateMove
+; arguments: direction, world, empty, empty, empty, empty (padding for unpacked world)
+; returns: new world
+; ------------------------------------------------------------------------------
+LD 0 0         ; @simulateMove
+RTN            ; to be implemented
+
+; ------------------------------------------------------------------------------
+; @evaluateWorld
+; arguments: world
+; returns: score
+; ------------------------------------------------------------------------------
+LD 0 0         ; @evaluateWorld
+LDC 0
+RTN            ; to be implemented
+; ------------------------------------------------------------------------------

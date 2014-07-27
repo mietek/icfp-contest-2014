@@ -1,0 +1,93 @@
+LDC 0          ; initial state
+LDF 4
+CONS
+RTN
+LDC 0          ; @stepFunction
+LDC 3          ; start checking moves starting with 3
+LDC 0          ; placeholder for best score
+LDC 0          ; placeholder for current score
+LDC 0          ; placholder for best move
+LD 0 1         ; the world state
+DUM 5
+LDF 14
+AP 5           ; return the best move
+RTN
+LD 0 0         current direction to check ; @evaluateMoves
+LDC 5          ; iterations count for evaluateMove
+LDC 0          ; accumulator for cumulative score of iterations
+LD 0 4         ; pass the current world state
+DUM 4
+LDF 43
+RAP 4
+ST 0 2
+LD 0 2
+LD 0 1
+CGT
+TSEL 26 30
+LD 0 2         ; @gotBetterScore
+ST 0 1
+LD 0 0
+ST 0 3
+LD 0 0         ; @gotWorseScore
+TSEL 32 41
+LD 0 0         ; @checkNextMove
+LDC -1
+ADD
+LD 0 1
+LD 0 2
+LD 0 3
+LD 0 4
+LDF 14
+TAP 5
+LD 0 3         ; @returnBestMove
+RTN
+LD 0 1         ; iterations count ; @evaluateMove
+TSEL 47 45
+LD 0 2         ; @returnCumulativeScore
+RTN
+LD 0 2         ; @doAnotherIteration
+LD 0 0         ; direction
+LD 0 3         ; world
+LDC 5          ; iterations count for single simulation
+LDF 65
+AP 3           ; get the resulting world
+LDF 90
+AP 1           ; get the new score
+ADD            ; add it to the previous one
+ST 0 2         ; and store for later
+LD 0 0         ; preparing arguments for recursive call
+LD 0 1
+LDC -1         ; decrease the iterations count
+ADD
+LD 0 2
+LD 0 3
+LDF 43
+TAP 4
+LD 0 0         ; @runSimulation
+LD 0 1
+LDC 0
+LDC 0
+LDC 0
+LDC 0
+LDF 88
+AP 6           ; returns new world state
+ST 0 1         ; store it for later
+LD 0 2
+TSEL 78 76
+LD 0 1         ; @returnFinalWorld
+RTN
+LD 0 0         ; @doAnotherSimulationIteration
+LDF 86
+LD 0 1         ; current world state
+LD 0 2         ; iterations count
+LDC -1         ; decreased by 1
+ADD
+LDF 65
+TAP 3
+LD 0 0         ; @generateNextRandomDirection
+RTN            ; to be implemented
+LD 0 0         ; @simulateMove
+RTN            ; to be implemented
+LD 0 0         ; @evaluateWorld
+LDC 0
+RTN            ; to be implemented
