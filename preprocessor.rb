@@ -22,7 +22,7 @@ class Preprocessor
   end
 
   def non_empty_lines
-    lines.select { |line| line.strip.length > 0 }
+    lines.select { |line| line.strip.length > 0 and not line =~ /^\;/ }
   end
 
   def line_number_of(label)
