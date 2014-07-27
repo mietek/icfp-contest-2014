@@ -23,38 +23,42 @@
 
 // This assumes a 64-bit architecture, with memory allocated aligned to an
 // 8-byte boundary, leaving the lowest 3 bits clear to use as a tag.
-//
-// 32-bit numbers:
-// llllllll llllllll llllllll llllllll 00000000 00000000 00000000 00000tt0
-//
-// 64-bit pointers:
-// pppppppp pppppppp pppppppp pppppppp pppppppp pppppppp pppppppp ppppptt1
 
-#define TAG_MASK 0x07
+#define EMPTY_TAG  0
 
-intptr_t get_tag(void *x)
+#define NUM_TAG    1
+#define ADDR_TAG   2
+#define BRANCH_RET_ADDR_TAG 3
+#define FUNC_RET_ADDR_TAG 4
+#define PAIR_TAG   5
+#define CPAIR_TAG  6
+#define FRAME_TAG  7
+
+#define TAG_MASK   7
+
+intptr_t tag(void *x)
 {
 	return (intptr_t)x & TAG_MASK;
 }
 
-void *clear_tag(void *x)
+void *ptr(void *x)
 {
 	return (void *)((intptr_t)x & ~TAG_MASK);
 }
 
-void *set_tag(intptr_t t, void *x)
+void *tag_ptr(intptr_t t, void *x)
 {
-	return (void *)((intptr_t)clear_tag(x) | t);
+	return (void *)((intptr_t)ptr(x) | t);
 }
 
-void *set_num_tag(intptr_t t, int32_t n)
+void *lshift_num(int32_t n)
 {
-	return set_tag(t, (void *)((intptr_t)n << 32));
+	return (void *)((intptr_t)n << 32);
 }
 
-int32_t clear_num_tag(void *x)
+int32_t rshift_num(void *x)
 {
-	return (int32_t)((intptr_t)clear_tag(x) >> 32);
+	return (int32_t)((intptr_t)ptr(x) >> 32);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,10 +84,13 @@ STACK *alloc_stack()
 	return s;
 }
 
-void push_obj(void *x, STACK **sp)
+void push(void *x, STACK **sp)
 {
 	STACK *s = *sp;
 
+	if (tag(x) == EMPTY_TAG) {
+		halt("Empty tag");
+	}
 	if (s->top == s->data + s->size) {
 		if ((s->size *= 2) > MAX_STACK_SIZE) {
 			halt("Stack overflow");
@@ -97,7 +104,7 @@ void push_obj(void *x, STACK **sp)
 	*(s->top++) = x;
 }
 
-void *pop_obj(STACK *s)
+void *pop(STACK *s)
 {
 	if (s->top == s->data) {
 		halt("Stack underflow");
@@ -107,74 +114,69 @@ void *pop_obj(STACK *s)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define EMPTY_FRAME     0x00
-#define NOT_EMPTY_FRAME 0x01
-
 typedef struct frame {
 	struct frame *parent;
 	int32_t size;
 	void *data[];
 } FRAME;
 
-FRAME *alloc_frame(FRAME *p, int32_t s)
+FRAME *alloc_frame(FRAME *p, int32_t n)
 {
 	FRAME *f;
 
-	if (get_tag(p) != EMPTY_FRAME) {
-		haltf("Invalid parent %p", p);
+	if (n < 0) {
+		halt("Bad size");
 	}
-	if (s < 0) {
-		haltf("Invalid size %d", s);
-	}
-	if (!(f = malloc(sizeof(FRAME) + s * sizeof(void *)))) {
+	if (!(f = malloc(sizeof(FRAME) + n * sizeof(void *)))) {
 		halt("Out of memory");
 	}
 	f->parent = p;
-	f->size = s;
+	f->size = n;
 	return f;
 }
 
-void set_not_empty(FRAME *f)
+FRAME *parent(FRAME *f)
 {
-	f->parent = set_tag(NOT_EMPTY_FRAME, f->parent);
+	return f->parent;
 }
 
-int is_empty(FRAME *f)
-{
-	return get_tag(f->parent) == EMPTY_FRAME;
-}
-
-FRAME *get_parent(FRAME *f)
-{
-	return clear_tag(f->parent);
-}
-
-void set_elem(int32_t i, void *x, FRAME *f)
+void store(int32_t i, void *x, FRAME *f)
 {
 	if (i < 0) {
-		haltf("Invalid index %d", i);
+		halt("Frame underflow");
 	}
-	if (!is_empty(f)) {
-		halt("Not empty frame");
+	if (tag(x) == EMPTY_TAG) {
+		halt("Empty tag");
+	}
+	if (f->size < 0) {
+		halt("Filled frame");
 	}
 	if (i >= f->size) {
-		haltf("Expected %d elements, not %d", i + 1, f->size);
+		halt("Frame overflow");
 	}
 	f->data[i] = x;
 }
 
-void *get_elem(int32_t i, FRAME *f)
+void *load(int32_t i, FRAME *f)
 {
 	if (i < 0) {
-		haltf("Invalid index %d", i);
+		halt("Frame underflow");
 	}
-	if (is_empty(f)) {
-		halt("Empty frame");
+	if (f->size > 0) {
+		halt("Not filled frame");
 	}
-	if (i >= f->size) {
-		haltf("Expected %d elements, not %d", i + 1, f->size);
+	if (i >= f->size * -1) {
+		halt("Frame overflow");
 	}
 	return f->data[i];
+}
+
+void tag_filled(FRAME *f)
+{
+	if (f->size < 0) {
+		halt("Filled frame");
+	}
+	f->size *= -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -183,72 +185,469 @@ typedef struct pair {
 	void *fst, *snd;
 } PAIR;
 
-PAIR *alloc_pair(void *a, void *b)
+PAIR *alloc_pair(void *x, void *y)
 {
 	PAIR *p;
 
+	if (tag(x) == EMPTY_TAG) {
+		halt("Empty first tag");
+	}
+	if (tag(y) == EMPTY_TAG) {
+		halt("Empty second tag");
+	}
 	if (!(p = malloc(sizeof(PAIR)))) {
 		halt("Out of memory");
 	}
-	p->fst = a;
-	p->snd = b;
+	p->fst = x;
+	p->snd = y;
 	return p;
 }
 
-void *get_fst(PAIR *p)
+void *fst(PAIR *p)
 {
 	return p->fst;
 }
 
-void *get_snd(PAIR *p)
+void *snd(PAIR *p)
 {
 	return p->snd;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define INT_OBJ  0x00
-#define PAIR_OBJ 0x01
-#define ADDR_OBJ 0x02
-
-void *make_int(int32_t n)
+void *tag_num(int32_t n)
 {
-	return set_num_tag(INT_OBJ, n);
+	return tag_ptr(NUM_TAG, lshift_num(n));
 }
 
-int32_t get_int(void *x)
+int32_t num(void *x)
 {
-	if (get_tag(x) != INT_OBJ) {
-		halt("Expected integer");
+	if (tag(x) != NUM_TAG) {
+		halt("Type mismatch");
 	}
-	return clear_num_tag(x);
+	return rshift_num(x);
 }
 
-void *make_pair(PAIR *p)
+void *tag_addr(int32_t n)
 {
-	return set_tag(PAIR_OBJ, p);
+	return tag_ptr(ADDR_TAG, lshift_num(n));
 }
 
-PAIR *get_pair(void *x)
+int32_t addr(void *x)
 {
-	if (get_tag(x) != PAIR_OBJ) {
-		halt("Expected pair");
+	if (tag(x) != ADDR_TAG) {
+		halt("Type mismatch");
 	}
-	return clear_tag(x);
+	return rshift_num(x);
 }
 
-void *make_addr(int32_t a)
+void *tag_branch_ret_addr(int32_t n)
 {
-	return set_num_tag(ADDR_OBJ, a);
+	return tag_ptr(BRANCH_RET_ADDR_TAG, lshift_num(n));
 }
 
-int32_t get_addr(void *x)
+int32_t branch_ret_addr(void *x)
 {
-	if (get_tag(x) != ADDR_OBJ) {
-		halt("Expected address");
+	if (tag(x) != BRANCH_RET_ADDR_TAG) {
+		halt("Type mismatch");
 	}
-	return clear_num_tag(x);
+	return rshift_num(x);
 }
+
+void *tag_func_ret_addr(int32_t n)
+{
+	return tag_ptr(FUNC_RET_ADDR_TAG, lshift_num(n));
+}
+
+int32_t func_ret_addr(void *x)
+{
+	if (tag(x) != FUNC_RET_ADDR_TAG) {
+		halt("Type mismatch");
+	}
+	return rshift_num(x);
+}
+
+void *tag_pair(PAIR *p)
+{
+	return tag_ptr(PAIR_TAG, p);
+}
+
+PAIR *pair(void *x)
+{
+	if (tag(x) != PAIR_TAG) {
+		halt("Type mismatch");
+	}
+	return ptr(x);
+}
+
+void *tag_cpair(PAIR *p)
+{
+	return tag_ptr(CPAIR_TAG, p);
+}
+
+PAIR *cpair(void *x)
+{
+	if (tag(x) != CPAIR_TAG) {
+		halt("Type mismatch");
+	}
+	return ptr(x);
+}
+
+void *tag_frame(FRAME *f)
+{
+	return tag_ptr(FRAME_TAG, f);
+}
+
+FRAME *frame(void *x)
+{
+	if (tag(x) != FRAME_TAG) {
+		halt("Type mismatch");
+	}
+	return ptr(x);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define STOPPED_ADDR (-1)
+
+typedef struct state {
+	int32_t addr;
+	STACK *data;
+	STACK *ctrl;
+	FRAME *env;
+} STATE;
+
+STATE *alloc_state()
+{
+	STATE *s;
+
+	if (!(s = malloc(sizeof(STATE)))) {
+		halt("Out of memory");
+	}
+	s->addr = 0;
+	s->data = alloc_stack();
+	s->ctrl = alloc_stack();
+	s->env = NULL; // TODO
+	return s;
+}
+
+// LDC - load constant
+void do_ldc(int32_t n, STATE *s)
+{
+	push(tag_num(n), &s->data);
+	s->addr++;
+}
+
+// LD - load from environment
+void do_ld(int32_t fi, int32_t ei, STATE *s)
+{
+	int32_t i = 0;
+	FRAME *f;
+
+	if (fi < 0) {
+		halt("Chain underflow");
+	}
+	if (ei < 0) {
+		halt("Frame underflow");
+	}
+	f = s->env;
+	for (i = 0; i < fi; i++) {
+		if (!f) {
+			halt("Chain overflow");
+		}
+		f = parent(f);
+	}
+	push(load(ei, f), &s->data);
+	s->addr++;
+}
+
+// ADD - integer addition
+void do_add(STATE *s)
+{
+	int32_t n, m;
+
+	m = num(pop(s->data));
+	n = num(pop(s->data));
+	push(tag_num(n + m), &s->data);
+	s->addr++;
+}
+
+// SUB - integer subtraction
+void do_sub(STATE *s)
+{
+	int32_t n, m;
+
+	m = num(pop(s->data));
+	n = num(pop(s->data));
+	push(tag_num(n - m), &s->data);
+	s->addr++;
+}
+
+// MUL - integer multiplication
+void do_mul(STATE *s)
+{
+	int32_t n, m;
+
+	m = num(pop(s->data));
+	n = num(pop(s->data));
+	push(tag_num(n * m), &s->data);
+	s->addr++;
+}
+
+// DIV - integer division
+void do_div(STATE *s)
+{
+	int32_t n, m;
+
+	m = num(pop(s->data));
+	n = num(pop(s->data));
+	push(tag_num(n / m), &s->data);
+	s->addr++;
+}
+
+// CEQ - compare equal
+void do_ceq(STATE *s)
+{
+	int32_t n, m;
+
+	m = num(pop(s->data));
+	n = num(pop(s->data));
+	push(tag_num(n == m ? 1 : 0), &s->data);
+	s->addr++;
+}
+
+// CGT - compare greater than
+void do_cgt(STATE *s)
+{
+	int32_t n, m;
+
+	m = num(pop(s->data));
+	n = num(pop(s->data));
+	push(tag_num(n > m ? 1 : 0), &s->data);
+	s->addr++;
+}
+
+// CGTE - compare greater than or equal
+void do_cgte(STATE *s)
+{
+	int32_t n, m;
+
+	m = num(pop(s->data));
+	n = num(pop(s->data));
+	push(tag_num(n >= m ? 1 : 0), &s->data);
+	s->addr++;
+}
+
+// ATOM - test if value is an integer
+void do_atom(STATE *s)
+{
+	intptr_t t;
+
+	t = tag(pop(s->data));
+	push(tag_num(t == NUM_TAG ? 1 : 0), &s->data);
+	s->addr++;
+}
+
+// CONS - allocate a CONS cell
+void do_cons(STATE *s)
+{
+	void *x, *y;
+	PAIR *p;
+
+	y = pop(s->data);
+	x = pop(s->data);
+	p = alloc_pair(x, y);
+	push(tag_pair(p), &s->data);
+	s->addr++;
+}
+
+// CAR - extract first element from CONS cell
+void do_car(STATE *s)
+{
+	PAIR *p;
+
+	p = pair(pop(s->data));
+	push(fst(p), &s->data);
+	s->addr++;
+}
+
+// CDR - extract second element from CONS cell
+void do_cdr(STATE *s)
+{
+	PAIR *p;
+
+	p = pair(pop(s->data));
+	push(snd(p), &s->data);
+	s->addr++;
+}
+
+// SEL - conditional branch
+void do_sel(int32_t taddr, int32_t faddr, STATE *s)
+{
+	int32_t n;
+
+	if (taddr < 0) {
+		halt("Bad true address");
+	}
+	if (faddr < 0) {
+		halt("Bad false address");
+	}
+	n = num(pop(s->data));
+	push(tag_branch_ret_addr(s->addr + 1), &s->ctrl);
+	s->addr = n ? taddr : faddr;
+}
+
+// JOIN - return from branch
+void do_join(STATE *s)
+{
+	s->addr = branch_ret_addr(pop(s->ctrl));
+}
+
+// LDF - load function
+void do_ldf(int32_t faddr, STATE *s)
+{
+	PAIR *c;
+
+	if (faddr < 0) {
+		halt("Bad function address");
+	}
+	c = alloc_pair(tag_addr(faddr), tag_frame(s->env));
+	push(tag_cpair(c), &s->data);
+	s->addr++;
+}
+
+// AP - call function
+void do_ap(int32_t n, STATE *s)
+{
+	PAIR *c;
+	FRAME *cenv, *fenv;
+	int32_t faddr, i;
+
+	c = cpair(pop(s->data));
+	faddr = addr(fst(c));
+	cenv = frame(snd(c));
+	fenv = alloc_frame(cenv, n);
+	for (i = n - 1; i >= 0; i--) {
+		store(i, pop(s->data), fenv);
+	}
+	tag_filled(fenv);
+	push(tag_frame(s->env), &s->ctrl);
+	push(tag_func_ret_addr(s->addr + 1), &s->ctrl);
+	s->env = fenv;
+	s->addr = faddr;
+}
+
+// RTN - return from function call
+// TODO: Free frame
+void do_rtn(STATE *s)
+{
+	int32_t fraddr;
+	FRAME *env;
+
+	fraddr = func_ret_addr(pop(s->ctrl));
+	env = frame(pop(s->ctrl));
+	s->env = env;
+	s->addr = fraddr;
+}
+
+// DUM - create an empty environment frame
+void do_dum(int32_t n, STATE *s)
+{
+	s->env = alloc_frame(s->env, n);
+	s->addr++;
+}
+
+// RAP - recursive environment call function
+void do_rap(int32_t n, STATE *s)
+{
+	PAIR *c;
+	FRAME *cenv;
+	int32_t faddr, i;
+
+	c = cpair(pop(s->data));
+	faddr = addr(fst(c));
+	cenv = frame(snd(c));
+	if (cenv != s->env) {
+		halt("Frame mismatch");
+	}
+	for (i = n - 1; i >= 0; i--) {
+		store(i, pop(s->data), s->env);
+	}
+	tag_filled(s->env);
+	push(tag_frame(parent(s->env)), &s->ctrl);
+	push(tag_func_ret_addr(s->addr + 1), &s->ctrl);
+	s->addr = faddr;
+}
+
+// STOP - terminate co-processor execution
+void do_stop(STATE *s)
+{
+	s->addr = STOPPED_ADDR;
+}
+
+// TSEL - tail-call conditional branch
+void do_tsel(int32_t taddr, int32_t faddr, STATE *s)
+{
+	int32_t n;
+
+	if (taddr < 0) {
+		halt("Bad true address");
+	}
+	if (faddr < 0) {
+		halt("Bad false address");
+	}
+	n = num(pop(s->data));
+	s->addr = n ? taddr : faddr;
+}
+
+// TAP - tail-call function
+// TODO: Overwrite frame
+void do_tap(int32_t n, STATE *s)
+{
+	PAIR *c;
+	FRAME *cenv, *fenv;
+	int32_t faddr, i;
+
+	c = cpair(pop(s->data));
+	faddr = addr(fst(c));
+	cenv = frame(snd(c));
+	fenv = alloc_frame(cenv, n);
+	for (i = n - 1; i >= 0; i--) {
+		store(i, pop(s->data), fenv);
+	}
+	tag_filled(fenv);
+	s->env = fenv;
+	s->addr = faddr;
+}
+
+// TRAP - recursive environment tail-call functions
+void do_trap(int32_t n, STATE *s)
+{
+	PAIR *c;
+	FRAME *cenv;
+	int32_t faddr, i;
+
+	c = cpair(pop(s->data));
+	faddr = addr(fst(c));
+	cenv = frame(snd(c));
+	if (cenv != s->env) {
+		halt("Frame mismatch");
+	}
+	for (i = n - 1; i >= 0; i--) {
+		store(i, pop(s->data), s->env);
+	}
+	tag_filled(s->env);
+	s->addr = faddr;
+}
+
+// ST - store to environment
+// TODO: Modifies filled frames!
+
+// DBUG - printf debugging
+// TODO
+
+// BRK - breakpoint debugging
+// TODO
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -283,7 +682,7 @@ void skip_spaces(FILE *in)
 	}
 }
 
-void *read_int(FILE *in, int32_t sign)
+void *read_lit(FILE *in, int32_t sign)
 {
 	int c;
 	int32_t n = 0;
@@ -293,7 +692,7 @@ void *read_int(FILE *in, int32_t sign)
 	}
 	n *= sign;
 	ungetc(c, in);
-	return make_int(n);
+	return tag_num(n);
 }
 
 void *read(FILE *in)
@@ -312,228 +711,41 @@ void *read(FILE *in)
 		} else {
 			ungetc(c, in);
 		}
-		return read_int(in, sign);
+		return read_lit(in, sign);
 	}
-	haltf("Unexpected '%c'", c);
+	haltf("Bad '%c'", c);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void write(void *x, FILE *out)
 {
-	switch (get_tag(x)) {
-	case INT_OBJ:
-		fprintf(out, "%d", get_int(x));
+	switch (tag(x)) {
+	case NUM_TAG:
+		fprintf(out, "%d", num(x));
 		break;
-	case PAIR_OBJ:
+	case ADDR_TAG:
+		fprintf(out, "@%d", addr(x));
 		break;
-	case ADDR_OBJ:
-		fprintf(out, "%d", get_addr(x));
+	case BRANCH_RET_ADDR_TAG:
+		fprintf(out, "br@%d", branch_ret_addr(x));
+		break;
+	case FUNC_RET_ADDR_TAG:
+		fprintf(out, "fr@%d", func_ret_addr(x));
+		break;
+	case PAIR_TAG:
+		// TODO
+		break;
+	case CPAIR_TAG:
+		// TODO
+		break;
+	case FRAME_TAG:
+		// TODO
 		break;
 	default:
-		haltf("Unexpected tag %lx", get_tag(x));
+		halt("Bad tag");
 	}
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-typedef struct state {
-	int32_t ctr;
-	STACK *data;
-	STACK *ctrl;
-	FRAME *env;
-} STATE;
-
-STATE *alloc_state()
-{
-	STATE *s;
-
-	if (!(s = malloc(sizeof(STATE)))) {
-		halt("Out of memory");
-	}
-	s->ctr = 0;
-	s->data = alloc_stack();
-	s->ctrl = alloc_stack();
-	s->env = NULL; // TODO
-	return s;
-}
-
-// LDC - load constant
-void do_ldc(int32_t n, STATE *s)
-{
-	push_obj(make_int(n), &s->data);
-	s->ctr++;
-}
-
-// LD - load from environment
-void do_ld(int32_t fi, int32_t ei, STATE *s)
-{
-	int32_t fc = 0;
-	FRAME *f;
-
-	if (fi < 0) {
-		haltf("Invalid frame index %d", fi);
-	}
-	if (ei < 0) {
-		haltf("Invalid element index %d", ei);
-	}
-	f = s->env;
-	for (fc = 0; fc < fi; fc++) {
-		if (!f) {
-			haltf("Expected %d frames, not %d", fi, fc);
-		}
-		f = f->parent;
-		fc++;
-	}
-	push_obj(get_elem(ei, f), &s->data);
-	s->ctr++;
-}
-
-// ADD - integer addition
-void do_add(STATE *s)
-{
-	int32_t n, m;
-
-	m = get_int(pop_obj(s->data));
-	n = get_int(pop_obj(s->data));
-	push_obj(make_int(n + m), &s->data);
-	s->ctr++;
-}
-
-// SUB - integer subtraction
-void do_sub(STATE *s)
-{
-	int32_t n, m;
-
-	m = get_int(pop_obj(s->data));
-	n = get_int(pop_obj(s->data));
-	push_obj(make_int(n - m), &s->data);
-	s->ctr++;
-}
-
-// MUL - integer multiplication
-void do_mul(STATE *s)
-{
-	int32_t n, m;
-
-	m = get_int(pop_obj(s->data));
-	n = get_int(pop_obj(s->data));
-	push_obj(make_int(n * m), &s->data);
-	s->ctr++;
-}
-
-// DIV - integer division
-void do_div(STATE *s)
-{
-	int32_t n, m;
-
-	m = get_int(pop_obj(s->data));
-	n = get_int(pop_obj(s->data));
-	push_obj(make_int(n / m), &s->data);
-	s->ctr++;
-}
-
-// CEQ - compare equal
-void do_ceq(STATE *s)
-{
-	int32_t n, m;
-
-	m = get_int(pop_obj(s->data));
-	n = get_int(pop_obj(s->data));
-	push_obj(make_int(n == m ? 1 : 0), &s->data);
-	s->ctr++;
-}
-
-// CGT - compare greater than
-void do_cgt(STATE *s)
-{
-	int32_t n, m;
-
-	m = get_int(pop_obj(s->data));
-	n = get_int(pop_obj(s->data));
-	push_obj(make_int(n > m ? 1 : 0), &s->data);
-	s->ctr++;
-}
-
-// CGTE - compare greater than or equal
-void do_cgte(STATE *s)
-{
-	int32_t n, m;
-
-	m = get_int(pop_obj(s->data));
-	n = get_int(pop_obj(s->data));
-	push_obj(make_int(n >= m ? 1 : 0), &s->data);
-	s->ctr++;
-}
-
-// ATOM - test if value is an integer
-void do_atom(STATE *s)
-{
-	intptr_t t;
-
-	t = get_tag(pop_obj(s->data));
-	push_obj(make_int(t == INT_OBJ ? 1 : 0), &s->data);
-	s->ctr++;
-}
-
-// CONS - allocate a CONS cell
-void do_cons(STATE *s)
-{
-	void *x, *y;
-
-	y = pop_obj(s->data);
-	x = pop_obj(s->data);
-	push_obj(make_pair(alloc_pair(x, y)), &s->data);
-	s->ctr++;
-}
-
-// CAR - extract first element from CONS cell
-void do_car(STATE *s)
-{
-	PAIR *p;
-
-	p = get_pair(pop_obj(s->data));
-	push_obj(get_fst(p), &s->data);
-	s->ctr++;
-}
-
-// CDR - extract second element from CONS cell
-void do_cdr(STATE *s)
-{
-	PAIR *p;
-
-	p = get_pair(pop_obj(s->data));
-	push_obj(get_snd(p), &s->data);
-	s->ctr++;
-}
-
-// SEL - conditional branch
-void do_sel(int32_t ta, int32_t fa, STATE *s)
-{
-	int32_t n;
-
-	n = get_int(pop_obj(s->data));
-	push_obj(make_addr(s->ctr + 1), &s->ctrl);
-	s->ctr = n ? ta : fa;
-}
-
-// JOIN - return from branch
-void do_join(STATE *s)
-{
-	s->ctr = get_addr(pop_obj(s->data));
-}
-
-// LDF - load function
-// AP - call function
-// RTN - return from function call
-// DUM - create an empty environment frame
-// RAP - recursive environment call function
-// STOP - terminate co-processor execution
-// TAP - tail-call function
-// TRAP - recursive environment tail-call functions
-// ST - store to environment
-// DBUG - printf debugging
-// BRK - breakpoint debugging
 
 ///////////////////////////////////////////////////////////////////////////////
 
