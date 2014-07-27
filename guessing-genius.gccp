@@ -139,6 +139,36 @@ RTN            ; to be implemented
 ; arguments: world
 ; returns: score
 ; ------------------------------------------------------------------------------
-LDC 1          ; @evaluateWorld
-RTN            ; to be implemented
+LD 0 0         ; @evaluateWorld
+CDR            ; player
+CAR
+CDR            ; player -> score
+CDR
+CDR
+CDR
+LDC 1          ; p1 - multiplier for score
+MUL
+
+LD 0 0
+CDR            ; player
+CAR
+CDR            ; player -> lives
+CDR
+CDR
+CAR
+LDC 10000      ; p2 - multiplier for lives
+MUL
+
+LD 0 0
+CDR            ; player
+CAR
+CAR            ; player -> vitality
+LDC 0
+CGT            ; we only want to know if fright mode is on
+LDC 1000       ; p4 - multiplier for fright mode
+MUL
+
+ADD
+ADD
+RTN
 ; ------------------------------------------------------------------------------

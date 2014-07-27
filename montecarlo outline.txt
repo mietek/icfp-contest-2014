@@ -48,7 +48,8 @@ evaluateWorld(world):
   (map, player, ghosts, fruit) = world
   (vitality, location, direction, lives, score) = player
   fruitProximity = distance(player, map) * fruit
-  return (p1 * score + p2 * lives + p3 * fruitProximity + p4 * vitality)
+  frightMode = vitality > 0 ? 1 : 0
+  return (p1 * score + p2 * lives + p3 * fruitProximity + p4 * frightMode)
 
 
 * note 1: by influencing randomness of moves we can "push" the world into the better direction
