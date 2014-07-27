@@ -120,3 +120,56 @@ MUL
 ADD
 ADD
 RTN
+LD 0 0         ; @isInRange
+LD 0 1
+CGTE
+LD 0 2
+LD 0 0
+CGTE
+MUL            ; MUL == logical AND
+RTN
+LD 0 0         ; @addVectors
+CAR
+LD 0 1
+CAR
+ADD
+LD 0 0
+CDR
+LD 0 1
+CDR
+ADD
+CONS
+RTN
+LD 0 0         ; @compareVectors
+CAR
+LD 0 1
+CAR
+CEQ
+LD 0 0
+CDR
+LD 0 1
+CDR
+CEQ
+MUL            ; MUL == logical AND
+RTN
+LD 0 0         ; @modulo
+LD 0 1
+LD 0 0
+LD 0 1
+DIV
+MUL
+SUB
+RTN
+LD 0 0         ; @nth
+LD 0 1
+LDC 0
+CGT
+TSEL 169 167
+CAR            ; just return head ; @nthHead
+RTN
+CDR            ; take tail ; @nthTail
+LD 0 1         ; subtract one from position
+LDC 1
+SUB
+LDF 162
+TAP 2          ; and call recursively

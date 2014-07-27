@@ -172,3 +172,81 @@ ADD
 ADD
 RTN
 ; ------------------------------------------------------------------------------
+; @isInRange
+; arguments: x,min,max
+; returns: 0/1 (if min ≤ x ≤ max)
+; ------------------------------------------------------------------------------
+LD 0 0         ; @isInRange
+LD 0 1
+CGTE
+LD 0 2
+LD 0 0
+CGTE
+MUL            ; MUL == logical AND
+RTN
+; ------------------------------------------------------------------------------
+; @addVectors
+; arguments: v1, v2
+; returns: v3 = v1 + v2
+; ------------------------------------------------------------------------------
+LD 0 0         ; @addVectors
+CAR
+LD 0 1
+CAR
+ADD
+LD 0 0
+CDR
+LD 0 1
+CDR
+ADD
+CONS
+RTN
+; ------------------------------------------------------------------------------
+; @compareVectors
+; arguments: v1, v2
+; returns: 0/1 (v1 == v2)
+; ------------------------------------------------------------------------------
+LD 0 0         ; @compareVectors
+CAR
+LD 0 1
+CAR
+CEQ
+LD 0 0
+CDR
+LD 0 1
+CDR
+CEQ
+MUL            ; MUL == logical AND
+RTN
+; ------------------------------------------------------------------------------
+; @modulo
+; arguments: a, b
+; returns: c = a mod b
+; ------------------------------------------------------------------------------
+LD 0 0         ; @modulo
+LD 0 1
+LD 0 0
+LD 0 1
+DIV
+MUL
+SUB
+RTN
+; ------------------------------------------------------------------------------
+; @nth
+; arguments: list, position
+; returns: nth element from list
+; ------------------------------------------------------------------------------
+LD 0 0         ; @nth
+LD 0 1
+LDC 0
+CGT
+TSEL @nthTail @nthHead
+CAR            ; just return head ; @nthHead
+RTN
+CDR            ; take tail ; @nthTail
+LD 0 1         ; subtract one from position
+LDC 1
+SUB
+LDF @nth
+TAP 2          ; and call recursively
+; ------------------------------------------------------------------------------
