@@ -1,0 +1,69 @@
+MonteCarlo Tree Search algorithm outline
+
+world :: (map, player, ghosts, fruit)
+map :: [[cell]]
+cell :: 0 | 1 | 2 | 3 | 4 | 5 | 6  // wall, empty, pill, power-pill, fruit, start, ghost
+player :: (vitality, location, direction, lives, score)
+ghosts :: [ghost]
+ghost :: (vitality, location, direction)
+direction :: 0 | 1 | 2 | 3
+location :: (x,y)
+
+evaluateMoves:
+  bestScore = 0
+  for move = 0 to 3:
+    score = evaluateMove(move)
+    if score > bestScore
+      bestScore = score
+      bestMove = move
+  return bestMove
+
+evaluateMove(direction):
+  score = 0
+  n times:
+    score += evaluateWorld(runSimulation(direction, world))
+  return score
+
+runSimulation (direction, startWorld):
+  world = simulateMove(direction, startWorld)
+  m times:
+    world = simulateRandomMove(world)
+  return world
+
+simulateRandomMove(world):
+  dir = randomMove //not totally random*
+  world = simulateMove(dir, world)
+  return world
+
+simulateMove(direction, world):
+  (map, player, ghosts, fruit) = world
+  movePlayer(direction, player)
+  moveGhosts(map, ghosts)
+  checkDeath(player, ghosts)
+  checkCollisions(map, player, fruit)
+  decreaseCounters(player, fruit)
+  return (map, player, ghosts, fruit)
+
+evaluateWorld(world):
+  (map, player, ghosts, fruit) = world
+  (vitality, location, direction, lives, score) = player
+  fruitProximity = distance(player, map) * fruit
+  return (p1 * score + p2 * lives + p3 * fruitProximity + p4 * vitality)
+
+
+* note 1: by influencing randomness of moves we can "push" the world into the better direction
+  example:
+
+  ###########  P = player
+  #P      G #  G = ghost
+  # ## #### #  F = fruit
+  # #    F  #
+  ###########
+
+  In this situation player has enough time to go right and then down.
+  In totally random simulation moving right will result in worse score due to the probability of meeting the ghost and dying.
+  However if we could assume that we will make the right choice in the future (in 3 moves to be precise), it could turn out that it is a much better choice.
+
+* note 2:
+  I think we can use some arbitrary number of ticks (127 seems to be a good number) as a unit of time. We won't be simulating more than 10 moves ahead and within such amount of time the difference in speed between player and ghosts is negligible.
+
