@@ -53,7 +53,7 @@ LD 0 3         ; world
 LDC 5          ; iterations count for single simulation
 LDF 76
 AP 3           ; get the resulting world
-LDF 93
+LDF 141
 AP 1           ; get the new score
 ADD            ; add it to the previous one
 ST 0 2         ; and store for later
@@ -90,7 +90,55 @@ TAP 3
 LD 0 0         ; @generateNextRandomDirection
 RTN            ; to be implemented
 LD 0 1         ; @simulateMove
-RTN            ; to be implemented
+CAR            ; extract map
+ST 0 2         ; and store it in the frame
+LD 0 1         ; extract player
+CDR
+CAR
+ST 0 3         ; and store it in the frame
+LD 0 1         ; extract ghosts
+CDR
+CDR
+CAR
+ST 0 4
+LD 0 1         ; extract fruit
+CDR
+CDR
+CDR
+ST 0 5
+LD 0 0         ; movePlayer(direction, map, player) -> player
+LD 0 2
+LD 0 3
+LDF 122
+AP 3
+ST 0 3         ; store the new player
+LD 0 2         ; pack the new world again
+LD 0 3
+LD 0 4
+LD 0 5
+CONS
+CONS
+CONS
+RTN
+LD 0 2         ; @movePlayer
+CAR            ; player -> vitality
+LD 0 0
+LDF 202
+AP 1           ; vector to move the player
+LD 0 2         ; the player himself
+CDR
+CAR            ; and his location
+LDF 178
+AP 2           ; new position of player
+LD 0 0         ; new direction of player
+LD 0 2
+CDR            ; player -> (lives, score)
+CDR
+CDR
+CONS           ; pack the new player
+CONS
+CONS
+RTN
 LD 0 0         ; @evaluateWorld
 CDR            ; player
 CAR
@@ -152,6 +200,34 @@ CDR
 CEQ
 MUL            ; MUL == logical AND
 RTN
+LD 0 0         ; @directionToVector
+LDC 0
+CEQ
+TSEL 206 210
+LDC 0          ; @dtvUp
+LDC -1
+CONS
+RTN
+LD 0 0         ; @dtvNotUp
+LDC 1
+CEQ
+TSEL 214 218
+LDC 1          ; @dtvRight
+LDC 0
+CONS
+RTN
+LD 0 0         ; @dtvNotRight
+LDC 2
+CEQ
+TSEL 222 226
+LDC 0          ; @dtvDown
+LDC 1
+CONS
+RTN
+LDC -1         ; @dtvLeft
+LDC 0
+CONS
+RTN
 LD 0 0         ; @modulo
 LD 0 1
 LD 0 0
@@ -164,12 +240,12 @@ LD 0 0         ; @nth
 LD 0 1
 LDC 0
 CGT
-TSEL 169 167
+TSEL 245 243
 CAR            ; just return head ; @nthHead
 RTN
 CDR            ; take tail ; @nthTail
 LD 0 1         ; subtract one from position
 LDC 1
 SUB
-LDF 162
+LDF 238
 TAP 2          ; and call recursively

@@ -128,12 +128,82 @@ RTN            ; to be implemented
 
 ; ------------------------------------------------------------------------------
 ; @simulateMove
-; arguments: direction, world, empty, empty, empty, empty (padding for unpacked world)
+; arguments: direction, world, *map, *player, *ghosts, *fruit
 ; returns: new world
 ; ------------------------------------------------------------------------------
 LD 0 1         ; @simulateMove
-RTN            ; to be implemented
+CAR            ; extract map
+ST 0 2         ; and store it in the frame
 
+LD 0 1         ; extract player
+CDR
+CAR
+ST 0 3         ; and store it in the frame
+
+LD 0 1         ; extract ghosts
+CDR
+CDR
+CAR
+ST 0 4
+
+LD 0 1         ; extract fruit
+CDR
+CDR
+CDR
+ST 0 5
+
+LD 0 0         ; movePlayer(direction, map, player) -> player
+LD 0 2
+LD 0 3
+LDF @movePlayer
+AP 3
+ST 0 3         ; store the new player
+
+
+LD 0 2         ; pack the new world again
+LD 0 3
+LD 0 4
+LD 0 5
+CONS
+CONS
+CONS
+RTN
+
+; ------------------------------------------------------------------------------
+; @movePlayer
+; arguments: direction, map, player
+; returns: new player
+; ------------------------------------------------------------------------------
+LD 0 2         ; @movePlayer
+CAR            ; player -> vitality
+
+; ---- actual function
+LD 0 0
+LDF @directionToVector
+AP 1           ; vector to move the player
+
+LD 0 2         ; the player himself
+CDR
+CAR            ; and his location
+
+LDF @addVectors
+AP 2           ; new position of player
+; ----
+; todo: check if possible at all
+; ----
+
+LD 0 0         ; new direction of player
+
+LD 0 2
+CDR            ; player -> (lives, score)
+CDR
+CDR
+
+CONS           ; pack the new player
+CONS
+CONS
+
+RTN
 ; ------------------------------------------------------------------------------
 ; @evaluateWorld
 ; arguments: world
@@ -217,6 +287,42 @@ LD 0 1
 CDR
 CEQ
 MUL            ; MUL == logical AND
+RTN
+; ------------------------------------------------------------------------------
+; @directionToVector
+; arguments: direction
+; returns: vector
+; ------------------------------------------------------------------------------
+LD 0 0         ; @directionToVector
+LDC 0
+CEQ
+TSEL @dtvUp @dtvNotUp
+LDC 0          ; @dtvUp
+LDC -1
+CONS
+RTN
+
+LD 0 0         ; @dtvNotUp
+LDC 1
+CEQ
+TSEL @dtvRight @dtvNotRight
+LDC 1          ; @dtvRight
+LDC 0
+CONS
+RTN
+
+LD 0 0         ; @dtvNotRight
+LDC 2
+CEQ
+TSEL @dtvDown @dtvLeft
+LDC 0          ; @dtvDown
+LDC 1
+CONS
+RTN
+
+LDC -1         ; @dtvLeft
+LDC 0
+CONS
 RTN
 ; ------------------------------------------------------------------------------
 ; @modulo
