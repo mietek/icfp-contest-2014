@@ -232,7 +232,7 @@ LDF @moveGhosts
 AP 3
 ST 0 4         ; store the new ghosts
 
-LD 0 3         ; checkDeath(player, ghosts)
+LD 0 3         ; checkGhostCollisions(player, ghosts)
 LD 0 4
 LDF @checkGhostCollisions
 AP 2
@@ -430,11 +430,21 @@ CAR
 
 LDF @compareVectors
 AP 2
-TSEL @dead @keepLookingForDeath
+TSEL @collision @keepLookingForDeath
+
+LD 0 0         ; @collision
+CAR
+TSEL @eatGhost @dead
 
 LD 0 0         ; @dead
 LDF @decreaseLives
 AP 1
+RTN
+
+LD 0 0         ; @eatGhost
+LDC 200
+LDF @increasePlayerScore
+AP 2
 RTN
 
 LD 0 0         ; @keepLookingForDeath
