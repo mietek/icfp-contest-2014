@@ -43,7 +43,7 @@ RTN
 ; returns: direction
 ; ------------------------------------------------------------------------------
 LD 0 0         ; current direction to check ; @evaluateMoves
-LDC 10         ; iterations count for evaluateMove
+LDC 5         ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
 LD 0 4         ; pass the current world state
 LD 0 5         ; and random seed
@@ -96,7 +96,7 @@ LD 0 2         ; score so far ; @doAnotherIteration
 
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 5          ; how many steps in single simulation
+LDC 12          ; how many steps in single simulation
 LD 0 4         ; randomness
 LDF @runSimulation
 AP 4           ; get the resulting world
@@ -346,13 +346,15 @@ AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoPowerpill
 
-LD 0 1         ; player ; @ccFruit
-LDC 10         ; 700 points for eating fruit
+LD 0 2         ; @ccFruit
+TSEL @ccFruitActive @ccFruitInactive
+LD 0 1         ; player ; @ccFruitActive
+LDC 700         ; 700 points for eating fruit
 LDF @increasePlayerScore
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoFruit
-
+JOIN           ; @ccFruitInactive
 ; ------------------------------------------------------------------------------
 ; @evaluateWorld
 ; arguments: world
