@@ -101,8 +101,9 @@ LD 0 4         ; randomness
 LDF @runSimulation
 AP 4           ; get the resulting world
 
+LD 0 4         ; add some randomness to evaluation as well
 LDF @evaluateWorld
-AP 1           ; get the new score
+AP 2           ; get the new score
 
 ADD            ; add it to the previous one
 ST 0 2         ; and store for later
@@ -286,7 +287,7 @@ LD 0 1
 LD 0 3
 LDF @getMapCell
 AP 2
-LDC 1          ; 1 = wall
+LDC 0          ; 0 = wall
 CEQ
 SEL @unableToMove @ableToMove
 
@@ -415,7 +416,7 @@ JOIN           ; @ccNoFruit
 JOIN           ; @ccFruitInactive
 ; ------------------------------------------------------------------------------
 ; @evaluateWorld
-; arguments: world
+; arguments: world, rng-seed
 ; returns: score
 ; ------------------------------------------------------------------------------
 LD 0 0         ; @evaluateWorld
@@ -449,6 +450,13 @@ MUL
 
 ADD
 ADD
+
+LD 0 1         ; add some noise
+LDC 10         ; max. 9 points
+LDF @modulo
+AP 2
+ADD
+
 RTN
 ; ------------------------------------------------------------------------------
 ; @isInRange
