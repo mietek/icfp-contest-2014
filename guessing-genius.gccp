@@ -134,8 +134,9 @@ LDC 0
 LDC 0
 LDC 0
 LDC 0
+LD 0 3
 LDF @simulateMove
-AP 6           ; returns new world state
+AP 7           ; returns new world state
 ST 0 1         ; store it for later
 LD 0 2
 TSEL @doAnotherSimulationIteration @returnFinalWorld
@@ -188,7 +189,7 @@ JOIN
 
 ; ------------------------------------------------------------------------------
 ; @simulateMove
-; arguments: direction, world, *map, *player, *ghosts, *fruit
+; arguments: direction, world, *map, *player, *ghosts, *fruit. rng-seed
 ; returns: new world
 ; ------------------------------------------------------------------------------
 ; data structures unpacking
@@ -226,8 +227,9 @@ ST 0 3         ; store the new player
 
 LD 0 2         ; moveGhosts(map, ghosts) -> ghosts
 LD 0 4
+LD 0 6
 LDF @moveGhosts
-AP 2
+AP 3
 ST 0 4         ; store the new ghosts
 
 LD 0 3         ; checkDeath(player, ghosts)
@@ -314,12 +316,19 @@ JOIN           ; using the new one
 
 ; ------------------------------------------------------------------------------
 ; @moveOneGhost
-; arguments: map, ghost, *temp
+; arguments: map, ghost, *temp, rng-seed
 ; returns: new ghost
 ; ------------------------------------------------------------------------------
 LD 0 1         ; @moveOneGhost
 CDR            ; take his direction
 CDR
+
+LD 0 3         ; randomly change it
+LDC 3          ; 1/3 chance to do it
+LDF @modulo
+AP 2
+SEL @notChangingGhostDirection @changingGhostDirection
+
 
 LDF @directionToVector
 AP 1           ; vector to move the ghost
@@ -356,9 +365,21 @@ CONS
 CONS
 RTN
 
+LD 0 3         ; @changingGhostDirection
+LDC 3
+LDF @modulo
+AP 2
+LDC 1
+SUB
+ADD
+LDC 4
+LDF @modulo
+AP 2
+JOIN           ; @notChangingGhostDirection
+
 ; ------------------------------------------------------------------------------
 ; @moveGhosts
-; arguments: map, ghosts
+; arguments: map, ghosts, rng-seed
 ; returns: new ghosts
 ; ------------------------------------------------------------------------------
 LD 0 1         ; @moveGhosts
@@ -371,14 +392,20 @@ LD 0 0         ; @moveNextGhost
 LD 0 1
 CAR
 LDC -1
+LD 0 2
 LDF @moveOneGhost
-AP 3
+AP 4
 
 LD 0 0         ; recursively move the rest
 LD 0 1
 CDR
+
+LD 0 2
+LDF @generateNewRandom
+AP 1
+
 LDF @moveGhosts
-AP 2
+AP 3
 CONS           ; and merge results
 RTN
 
