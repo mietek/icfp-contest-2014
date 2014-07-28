@@ -96,7 +96,7 @@ LD 0 2         ; score so far ; @doAnotherIteration
 
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 7          ; how many steps in single simulation
+LDC 12          ; how many steps in single simulation
 LD 0 4         ; randomness
 LDF @runSimulation
 AP 4           ; get the resulting world
@@ -238,8 +238,6 @@ LDF @checkGhostCollisions
 AP 2
 ST 0 3         ; store the new player
 
-
-
 LD 0 2         ; checkCollectibles(map, player, fruit, *cell)
 LD 0 3
 LD 0 5
@@ -249,6 +247,15 @@ AP 4
 ST 0 5         ; store the new fruit
 ST 0 3         ; store the new player
 ST 0 2         ; store the new map
+
+
+LD 0 3         ; decreaseCounters (player, fruit)
+LD 0 5
+LDF @decreaseCounters
+AP 2
+ST 0 5
+ST 0 3
+
 
 ; --
 ; packing new data structures
@@ -434,6 +441,8 @@ TSEL @collision @keepLookingForDeath
 
 LD 0 0         ; @collision
 CAR
+LDC 0
+CGT
 TSEL @eatGhost @dead
 
 LD 0 0         ; @dead
@@ -452,6 +461,41 @@ LD 0 1
 CDR
 LDF @checkGhostCollisions
 TAP 2
+
+; ------------------------------------------------------------------------------
+; @decreaseCounters
+; arguments: player, fruit
+; returns: new player, new fruit
+; ------------------------------------------------------------------------------
+LD 0 0         ; @decreaseCounters
+CAR
+LDF @decreaseCounter
+AP 1
+LD 0 0
+CDR
+CONS
+
+LD 0 1
+LDF @decreaseCounter
+AP 1
+RTN
+
+; ------------------------------------------------------------------------------
+; @decreaseCounter
+; arguments: counter
+; returns: new counter
+; ------------------------------------------------------------------------------
+LD 0 0         ; @decreaseCounter
+LDC 0
+CGT
+TSEL @hasToDecrease @noDecreasing
+LDC 0          ; @noDecreasing
+RTN
+
+LD 0 0         ; @hasToDecrease
+LDC 135
+SUB
+RTN
 
 ; ------------------------------------------------------------------------------
 ; @checkCollectibles
@@ -504,6 +548,8 @@ ST 0 1         ; save the updated player
 JOIN           ; @ccNoPowerpill
 
 LD 0 2         ; @ccFruit
+LDC 0
+CGT
 TSEL @ccFruitActive @ccFruitInactive
 LD 0 1         ; player ; @ccFruitActive
 LDC 700         ; 700 points for eating fruit

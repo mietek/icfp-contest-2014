@@ -23,7 +23,7 @@ MUL
 LDC 6925
 ADD
 LDC 65535
-LDF 463
+LDF 494
 AP 2
 RTN
 LD 0 0         ; current direction to check ; @evaluateMoves
@@ -67,12 +67,12 @@ RTN
 LD 0 2         ; score so far ; @doAnotherIteration
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 7          ; how many steps in single simulation
+LDC 12          ; how many steps in single simulation
 LD 0 4         ; randomness
 LDF 91
 AP 4           ; get the resulting world
 LD 0 4         ; add some randomness to evaluation as well
-LDF 369
+LDF 400
 AP 2           ; get the new score
 ADD            ; add it to the previous one
 ST 0 2         ; and store for later
@@ -118,7 +118,7 @@ LDF 91
 TAP 4
 LD 0 1         ; @generateNextRandomDirection
 LDC 3          ; 33% chance to change direction
-LDF 463
+LDF 494
 AP 2
 TSEL 123 125
 LD 0 0         ; @leaveSameDirection
@@ -126,11 +126,11 @@ RTN
 LD 0 0         ; @randomlyRotate
 LD 0 1
 LDC 2
-LDF 463
+LDF 494
 AP 2
 SEL 135 138
 LDC 4
-LDF 463
+LDF 494
 AP 2
 RTN
 LDC 1          ; @rotateLeft
@@ -160,29 +160,35 @@ LD 0 0         ; movePlayer(direction, map, player) -> player
 LD 0 2
 LD 0 3
 LDC -1
-LDF 193
+LDF 199
 AP 4
 ST 0 3         ; store the new player
 LD 0 2         ; moveGhosts(map, ghosts) -> ghosts
 LD 0 4
 LD 0 6
-LDF 271
+LDF 277
 AP 3
 ST 0 4         ; store the new ghosts
 LD 0 3         ; checkGhostCollisions(player, ghosts)
 LD 0 4
-LDF 293
+LDF 299
 AP 2
 ST 0 3         ; store the new player
 LD 0 2         ; checkCollectibles(map, player, fruit, *cell)
 LD 0 3
 LD 0 5
 LDC 0
-LDF 325
+LDF 354
 AP 4
 ST 0 5         ; store the new fruit
 ST 0 3         ; store the new player
 ST 0 2         ; store the new map
+LD 0 3         ; decreaseCounters (player, fruit)
+LD 0 5
+LDF 333
+AP 2
+ST 0 5
+ST 0 3
 LD 0 2
 LD 0 3
 LD 0 4
@@ -194,21 +200,21 @@ RTN
 LD 0 2         ; @movePlayer
 CAR            ; player -> vitality
 LD 0 0
-LDF 435
+LDF 466
 AP 1           ; vector to move the player
 LD 0 2         ; the player himself
 CDR
 CAR            ; and his location
-LDF 411
+LDF 442
 AP 2           ; new position of player
 ST 0 3
 LD 0 1
 LD 0 3
-LDF 471
+LDF 502
 AP 2
 LDC 0          ; 0 = wall
 CEQ
-SEL 220 224
+SEL 226 230
 LD 0 0         ; new direction of player
 LD 0 2
 CDR            ; player -> (lives, score)
@@ -229,24 +235,24 @@ CDR            ; take his direction
 CDR
 LD 0 3         ; randomly change it
 LDC 3          ; 1/3 chance to do it
-LDF 463
+LDF 494
 AP 2
-SEL 270 260
-LDF 435
+SEL 276 266
+LDF 466
 AP 1           ; vector to move the ghost
 LD 0 1         ; current ghost position
 CDR
 CAR
-LDF 411
+LDF 442
 AP 2           ; new position of ghost
 ST 0 2
 LD 0 0
 LD 0 2
-LDF 471
+LDF 502
 AP 2
 LDC 0
 CEQ
-TSEL 249 251
+TSEL 255 257
 LD 0 1         ; @ghostUnableToMove
 RTN
 LD 0 1         ; @ghostAbleToMove
@@ -260,18 +266,18 @@ CONS
 RTN
 LD 0 3         ; @changingGhostDirection
 LDC 3
-LDF 463
+LDF 494
 AP 2
 LDC 1
 SUB
 ADD
 LDC 4
-LDF 463
+LDF 494
 AP 2
 JOIN           ; @notChangingGhostDirection
 LD 0 1         ; @moveGhosts
 ATOM           ; check for the end of list
-TSEL 274 276
+TSEL 280 282
 LDC 0          ; @noMoreMovingGhosts
 RTN
 LD 0 0         ; @moveNextGhost
@@ -279,7 +285,7 @@ LD 0 1
 CAR
 LDC -1
 LD 0 2
-LDF 226
+LDF 232
 AP 4
 LD 0 0         ; recursively move the rest
 LD 0 1
@@ -287,13 +293,13 @@ CDR
 LD 0 2
 LDF 19
 AP 1
-LDF 271
+LDF 277
 AP 3
 CONS           ; and merge results
 RTN
 LD 0 1         ; @checkGhostCollisions
 ATOM           ; check for end of the list
-TSEL 296 298
+TSEL 302 304
 LD 0 0         ; @notDead
 RTN
 LD 0 1         ; @checkGhostDeath
@@ -303,66 +309,91 @@ CAR
 LD 0 0         ; player location
 CDR
 CAR
-LDF 423
+LDF 454
 AP 2
-TSEL 308 320
+TSEL 314 328
 LD 0 0         ; @collision
 CAR
-TSEL 315 311
+LDC 0
+CGT
+TSEL 323 319
 LD 0 0         ; @dead
-LDF 526
+LDF 557
 AP 1
 RTN
 LD 0 0         ; @eatGhost
 LDC 200
-LDF 552
+LDF 583
 AP 2
 RTN
 LD 0 0         ; @keepLookingForDeath
 LD 0 1
 CDR
-LDF 293
+LDF 299
 TAP 2
+LD 0 0         ; @decreaseCounters
+CAR
+LDF 344
+AP 1
+LD 0 0
+CDR
+CONS
+LD 0 1
+LDF 344
+AP 1
+RTN
+LD 0 0         ; @decreaseCounter
+LDC 0
+CGT
+TSEL 350 348
+LDC 0          ; @noDecreasing
+RTN
+LD 0 0         ; @hasToDecrease
+LDC 135
+SUB
+RTN
 LD 0 0         ; the map ; @checkCollectibles
 LD 0 1         ; player -> location
 CDR
 CAR
-LDF 471
+LDF 502
 AP 2
 ST 0 3         ; save for future access
 LD 0 3
 LDC 2          ; is it pill?
 CEQ
-SEL 348 353
+SEL 377 382
 LD 0 3
 LDC 3          ; is it power pill?
 CEQ
-SEL 354 359
+SEL 383 388
 LD 0 3
 LDC 4          ; could it be the fruit?
 CEQ
-SEL 360 367
+SEL 389 398
 LD 0 0
 LD 0 1
 LD 0 2
 RTN
 LD 0 1         ; player ; @ccPill
 LDC 10         ; 10 points for eating pill
-LDF 552
+LDF 583
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoPill
 LD 0 1         ; player ; @ccPowerPill
 LDC 50         ; t0 points for eating power pill
-LDF 552
+LDF 583
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoPowerpill
 LD 0 2         ; @ccFruit
-TSEL 362 368
+LDC 0
+CGT
+TSEL 393 399
 LD 0 1         ; player ; @ccFruitActive
 LDC 700         ; 700 points for eating fruit
-LDF 552
+LDF 583
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoFruit
@@ -397,7 +428,7 @@ ADD
 ADD
 LD 0 1         ; add some noise
 LDC 10         ; max. 9 points
-LDF 463
+LDF 494
 AP 2
 ADD
 RTN
@@ -436,7 +467,7 @@ RTN
 LD 0 0         ; @directionToVector
 LDC 0
 CEQ
-TSEL 439 443
+TSEL 470 474
 LDC 0          ; @dtvUp
 LDC -1
 CONS
@@ -444,7 +475,7 @@ RTN
 LD 0 0         ; @dtvNotUp
 LDC 1
 CEQ
-TSEL 447 451
+TSEL 478 482
 LDC 1          ; @dtvRight
 LDC 0
 CONS
@@ -452,7 +483,7 @@ RTN
 LD 0 0         ; @dtvNotRight
 LDC 2
 CEQ
-TSEL 455 459
+TSEL 486 490
 LDC 0          ; @dtvDown
 LDC 1
 CONS
@@ -472,30 +503,30 @@ RTN
 LD 0 0         ; map ; @getMapCell
 LD 0 1         ; row
 CDR
-LDF 481
+LDF 512
 AP 2
 LD 0 1         ; column
 CAR
-LDF 481
+LDF 512
 AP 2
 RTN
 LD 0 0         ; @nth
 LD 0 1
 LDC 0
 CGT
-TSEL 488 486
+TSEL 519 517
 CAR            ; just return head ; @nthHead
 RTN
 CDR            ; take tail ; @nthTail
 LD 0 1         ; subtract one from position
 LDC 1
 SUB
-LDF 481
+LDF 512
 TAP 2          ; and call recursively
 LD 0 1         ; @updateNth
 LDC 0          ; is this the position we're looking for?
 CGT
-TSEL 503 498
+TSEL 534 529
 LD 0 2         ; new value ; @unHead
 LD 0 0         ; rest of the values
 CDR
@@ -509,7 +540,7 @@ LD 0 1
 LDC 1
 SUB
 LD 0 2
-LDF 494
+LDF 525
 AP 3
 CONS           ; append the head to the rest
 RTN
@@ -517,11 +548,11 @@ LD 0 0         ; list ; @addToNth
 LD 0 1         ; position
 LD 0 0         ; new value
 LD 0 1
-LDF 481
+LDF 512
 AP 2
 LD 0 2
 ADD
-LDF 494
+LDF 525
 AP 3
 RTN
 LD 0 0         ; @decreaseLives
