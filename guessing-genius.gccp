@@ -43,7 +43,7 @@ RTN
 ; returns: direction
 ; ------------------------------------------------------------------------------
 LD 0 0         ; current direction to check ; @evaluateMoves
-LDC 15         ; iterations count for evaluateMove
+LDC 20         ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
 LD 0 4         ; pass the current world state
 LD 0 5         ; and random seed
@@ -96,7 +96,7 @@ LD 0 2         ; score so far ; @doAnotherIteration
 
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 6          ; how many steps in single simulation
+LDC 7          ; how many steps in single simulation
 LD 0 4         ; randomness
 LDF @runSimulation
 AP 4           ; get the resulting world
@@ -224,7 +224,7 @@ LDF @movePlayer
 AP 4
 ST 0 3         ; store the new player
 
-LD 0 0         ; moveGhosts(map, ghosts) -> ghosts
+LD 0 2         ; moveGhosts(map, ghosts) -> ghosts
 LD 0 4
 LDF @moveGhosts
 AP 2
@@ -232,7 +232,7 @@ ST 0 4         ; store the new ghosts
 
 LD 0 3         ; checkDeath(player, ghosts)
 LD 0 4
-LDF @checkDeathFromGhosts
+LDF @checkGhostCollisions
 AP 2
 ST 0 3         ; store the new player
 
@@ -311,22 +311,83 @@ JOIN
 
 LD 0 3         ; @ableToMove
 JOIN           ; using the new one
+
+; ------------------------------------------------------------------------------
+; @moveOneGhost
+; arguments: map, ghost, *temp
+; returns: new ghost
+; ------------------------------------------------------------------------------
+LD 0 1         ; @moveOneGhost
+CDR            ; take his direction
+CDR
+
+LDF @directionToVector
+AP 1           ; vector to move the ghost
+
+LD 0 1         ; current ghost position
+CDR
+CAR
+
+LDF @addVectors
+AP 2           ; new position of ghost
+ST 0 2
+
+LD 0 0
+LD 0 2
+LDF @getMapCell
+AP 2
+LDC 0
+CEQ
+TSEL @ghostUnableToMove @ghostAbleToMove
+
+LD 0 1         ; @ghostUnableToMove
+RTN
+
+LD 0 1         ; @ghostAbleToMove
+CAR
+
+LD 0 2         ; substitute the new location
+
+LD 0 1         ; preserve direction
+CDR
+CDR
+
+CONS
+CONS
+RTN
+
 ; ------------------------------------------------------------------------------
 ; @moveGhosts
 ; arguments: map, ghosts
 ; returns: new ghosts
 ; ------------------------------------------------------------------------------
 LD 0 1         ; @moveGhosts
-RTN            ; to be implemented
-;ATOM          ; check for the end of list
-;TSEL @noMoreMovingGhosts @moveNextGhost
+ATOM           ; check for the end of list
+TSEL @noMoreMovingGhosts @moveNextGhost
+LDC 0          ; @noMoreMovingGhosts
+RTN
+
+LD 0 0         ; @moveNextGhost
+LD 0 1
+CAR
+LDC -1
+LDF @moveOneGhost
+AP 3
+
+LD 0 0         ; recursively move the rest
+LD 0 1
+CDR
+LDF @moveGhosts
+AP 2
+CONS           ; and merge results
+RTN
 
 ; ------------------------------------------------------------------------------
-; @checkDeathFromGhosts
+; @checkGhostCollisions
 ; arguments: player, ghosts
 ; returns: new player
 ; ------------------------------------------------------------------------------
-LD 0 1         ; @checkDeathFromGhosts
+LD 0 1         ; @checkGhostCollisions
 ATOM           ; check for end of the list
 TSEL @notDead @checkGhostDeath
 LD 0 0         ; @notDead
@@ -352,7 +413,7 @@ RTN
 LD 0 0         ; @keepLookingForDeath
 LD 0 1
 CDR
-LDF @checkDeathFromGhosts
+LDF @checkGhostCollisions
 TAP 2
 
 ; ------------------------------------------------------------------------------
