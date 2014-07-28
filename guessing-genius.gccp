@@ -24,7 +24,7 @@ RTN
 ; returns: direction
 ; ------------------------------------------------------------------------------
 LD 0 0         ; current direction to check ; @evaluateMoves
-LDC 1         ; iterations count for evaluateMove
+LDC 3         ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
 LD 0 4         ; pass the current world state
 DUM 4
@@ -72,7 +72,7 @@ LD 0 2         ; score so far ; @doAnotherIteration
 
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 1          ; how many steps in single simulation
+LDC 2          ; how many steps in single simulation
 LDF @runSimulation
 AP 3           ; get the resulting world
 
@@ -159,8 +159,9 @@ ST 0 5
 LD 0 0         ; movePlayer(direction, map, player) -> player
 LD 0 2
 LD 0 3
+LDC -1
 LDF @movePlayer
-AP 3
+AP 4
 ST 0 3         ; store the new player
 
 LD 0 2         ; checkCollectibles(map, player, fruit, *cell)
@@ -187,7 +188,7 @@ RTN
 
 ; ------------------------------------------------------------------------------
 ; @movePlayer
-; arguments: direction, map, player
+; arguments: direction, map, player, *temp
 ; returns: new player
 ; ------------------------------------------------------------------------------
 LD 0 2         ; @movePlayer
@@ -206,10 +207,15 @@ CAR            ; and his location
 
 LDF @addVectors
 AP 2           ; new position of player
+ST 0 3
 
-; ---
-; todo: check here if move possible at all
-; ---
+LD 0 1
+LD 0 3
+LDF @getMapCell
+AP 2
+LDC 1          ; 1 = wall
+CEQ
+SEL @unableToMove @ableToMove
 
 LD 0 0         ; new direction of player
 
@@ -224,6 +230,13 @@ CONS
 
 RTN
 
+LD 0 2         ; @unableToMove
+CDR
+CAR            ; keep old location
+JOIN
+
+LD 0 3         ; @ableToMove
+JOIN           ; using the new one
 ; ------------------------------------------------------------------------------
 ; @checkCollectibles
 ; arguments: map, player, fruit, *cell content

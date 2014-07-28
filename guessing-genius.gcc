@@ -13,7 +13,7 @@ AP 5           ; get best move
 CONS           ; returning (state, direction)
 RTN
 LD 0 0         ; current direction to check ; @evaluateMoves
-LDC 1         ; iterations count for evaluateMove
+LDC 3         ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
 LD 0 4         ; pass the current world state
 DUM 4
@@ -49,10 +49,10 @@ RTN
 LD 0 2         ; score so far ; @doAnotherIteration
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 1          ; how many steps in single simulation
+LDC 2          ; how many steps in single simulation
 LDF 66
 AP 3           ; get the resulting world
-LDF 190
+LDF 205
 AP 1           ; get the new score
 ADD            ; add it to the previous one
 ST 0 2         ; and store for later
@@ -108,14 +108,15 @@ ST 0 5
 LD 0 0         ; movePlayer(direction, map, player) -> player
 LD 0 2
 LD 0 3
-LDF 130
-AP 3
+LDC -1
+LDF 131
+AP 4
 ST 0 3         ; store the new player
 LD 0 2         ; checkCollectibles(map, player, fruit, *cell)
 LD 0 3
 LD 0 5
 LDC 0
-LDF 149
+LDF 164
 AP 4
 ST 0 5         ; store the new fruit
 ST 0 3         ; store the new player
@@ -131,13 +132,21 @@ RTN
 LD 0 2         ; @movePlayer
 CAR            ; player -> vitality
 LD 0 0
-LDF 251
+LDF 266
 AP 1           ; vector to move the player
 LD 0 2         ; the player himself
 CDR
 CAR            ; and his location
-LDF 227
+LDF 242
 AP 2           ; new position of player
+ST 0 3
+LD 0 1
+LD 0 3
+LDF 302
+AP 2
+LDC 1          ; 1 = wall
+CEQ
+SEL 158 162
 LD 0 0         ; new direction of player
 LD 0 2
 CDR            ; player -> (lives, score)
@@ -147,44 +156,50 @@ CONS           ; pack the new player
 CONS
 CONS
 RTN
+LD 0 2         ; @unableToMove
+CDR
+CAR            ; keep old location
+JOIN
+LD 0 3         ; @ableToMove
+JOIN           ; using the new one
 LD 0 0         ; the map ; @checkCollectibles
 LD 0 1         ; player -> location
 CDR
 CAR
-LDF 287
+LDF 302
 AP 2
 ST 0 3         ; save for future access
 LD 0 3
 LDC 2          ; is it pill?
 CEQ
-SEL 172 177
+SEL 187 192
 LD 0 3
 LDC 3          ; is it power pill?
 CEQ
-SEL 178 183
+SEL 193 198
 LD 0 3
 LDC 4          ; could it be the fruit?
 CEQ
-SEL 184 189
+SEL 199 204
 LD 0 0
 LD 0 1
 LD 0 2
 RTN
 LD 0 1         ; player ; @ccPill
 LDC 10         ; 10 points for eating pill
-LDF 342
+LDF 357
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoPill
 LD 0 1         ; player ; @ccPowerPill
 LDC 50         ; t0 points for eating power pill
-LDF 342
+LDF 357
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoPowerpill
 LD 0 1         ; player ; @ccFruit
 LDC 10         ; 700 points for eating fruit
-LDF 342
+LDF 357
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoFruit
@@ -252,7 +267,7 @@ RTN
 LD 0 0         ; @directionToVector
 LDC 0
 CEQ
-TSEL 255 259
+TSEL 270 274
 LDC 0          ; @dtvUp
 LDC -1
 CONS
@@ -260,7 +275,7 @@ RTN
 LD 0 0         ; @dtvNotUp
 LDC 1
 CEQ
-TSEL 263 267
+TSEL 278 282
 LDC 1          ; @dtvRight
 LDC 0
 CONS
@@ -268,7 +283,7 @@ RTN
 LD 0 0         ; @dtvNotRight
 LDC 2
 CEQ
-TSEL 271 275
+TSEL 286 290
 LDC 0          ; @dtvDown
 LDC 1
 CONS
@@ -288,30 +303,30 @@ RTN
 LD 0 0         ; map ; @getMapCell
 LD 0 1         ; row
 CDR
-LDF 297
+LDF 312
 AP 2
 LD 0 1         ; column
 CAR
-LDF 297
+LDF 312
 AP 2
 RTN
 LD 0 0         ; @nth
 LD 0 1
 LDC 0
 CGT
-TSEL 304 302
+TSEL 319 317
 CAR            ; just return head ; @nthHead
 RTN
 CDR            ; take tail ; @nthTail
 LD 0 1         ; subtract one from position
 LDC 1
 SUB
-LDF 297
+LDF 312
 TAP 2          ; and call recursively
 LD 0 1         ; @updateNth
 LDC 0          ; is this the position we're looking for?
 CGT
-TSEL 319 314
+TSEL 334 329
 LD 0 2         ; new value ; @unHead
 LD 0 0         ; rest of the values
 CDR
@@ -325,7 +340,7 @@ LD 0 1
 LDC 1
 SUB
 LD 0 2
-LDF 310
+LDF 325
 AP 3
 CONS           ; append the head to the rest
 RTN
@@ -333,11 +348,11 @@ LD 0 0         ; list ; @addToNth
 LD 0 1         ; position
 LD 0 0         ; new value
 LD 0 1
-LDF 297
+LDF 312
 AP 2
 LD 0 2
 ADD
-LDF 310
+LDF 325
 AP 3
 RTN
 LD 0 0         ; @increasePlayerScore
