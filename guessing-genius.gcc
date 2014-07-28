@@ -4,37 +4,36 @@ CONS
 RTN
 LDC 0          ; @stepFunction
 LDC 3          ; start checking moves starting with 3
-LDC 0          ; placeholder for best score
-LDC 0          ; placeholder for current score
-LDC 0          ; placholder for best move
+LDC -1          ; placeholder for best score
+LDC -1          ; placeholder for current score
+LDC -1         ; placeholder for best move
 LD 0 1         ; the world state
-DUM 5
-LDF 15
-RAP 5          ; get best move
+LDF 14
+AP 5           ; get best move
 CONS           ; returning (state, direction)
 RTN
 LD 0 0         ; current direction to check ; @evaluateMoves
-LDC 5          ; iterations count for evaluateMove
+LDC 20         ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
 LD 0 4         ; pass the current world state
 DUM 4
-LDF 45
+LDF 44
 RAP 4
 ST 0 2         ; store current score for later
 LD 0 2         ; load again to compare with
 LD 0 1         ; the best one so far
 CGT
-SEL 40 44
+SEL 39 43
 LD 0 0
-TSEL 29 38
+TSEL 28 37
 LD 0 0         ; load current direction ; @checkNextMove
-LDC -1
-ADD            ; and subtract 1 to have the next one
+LDC 1
+SUB            ; and subtract 1 to have the next one
 LD 0 1         ; best score so far
-LD 0 2         ; current score
+LDC 0          ; current score
 LD 0 3         ; best move
 LD 0 4         ; world
-LDF 15
+LDF 14
 TAP 5          ; recursive call
 LD 0 3         ; @returnBestMove
 RTN
@@ -44,16 +43,16 @@ LD 0 0
 ST 0 3
 JOIN           ; @gotWorseScore
 LD 0 1         ; iterations count ; @evaluateMove
-TSEL 49 47
+TSEL 48 46
 LD 0 2         ; @returnCumulativeScore
 RTN
 LD 0 2         ; score so far ; @doAnotherIteration
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 5          ; iterations count for single simulation
-LDF 76
+LDC 4          ; how many steps in single simulation
+LDF 75
 AP 3           ; get the resulting world
-LDF 141
+LDF 190
 AP 1           ; get the new score
 ADD            ; add it to the previous one
 ST 0 2         ; and store for later
@@ -63,7 +62,7 @@ LDC -1         ; decrease the iterations count
 ADD
 LD 0 2
 LD 0 3
-LDF 45
+LDF 44
 TAP 4
 LD 0 0         ; @runSimulation
 LD 0 1
@@ -71,21 +70,21 @@ LDC 0
 LDC 0
 LDC 0
 LDC 0
-LDF 91
+LDF 90
 AP 6           ; returns new world state
 ST 0 1         ; store it for later
 LD 0 2         ; @runSimulation
-TSEL 80 78
+TSEL 79 77
 LD 0 1         ; @returnFinalWorld
 RTN
 LD 0 0         ; @doAnotherSimulationIteration
-LDF 89
+LDF 88
 AP 1
 LD 0 1         ; current world state
 LD 0 2         ; iterations count
 LDC -1         ; decreased by 1
 ADD
-LDF 76
+LDF 75
 TAP 3
 LD 0 0         ; @generateNextRandomDirection
 RTN            ; to be implemented
@@ -109,10 +108,19 @@ ST 0 5
 LD 0 0         ; movePlayer(direction, map, player) -> player
 LD 0 2
 LD 0 3
-LDF 122
+LDF 130
 AP 3
 ST 0 3         ; store the new player
-LD 0 2         ; pack the new world again
+LD 0 2         ; checkCollectibles(map, player, fruit, *cell)
+LD 0 3
+LD 0 5
+LDC 0
+LDF 149
+AP 4
+ST 0 5         ; store the new fruit
+ST 0 3         ; store the new player
+ST 0 2         ; store the new map
+LD 0 2
 LD 0 3
 LD 0 4
 LD 0 5
@@ -123,12 +131,12 @@ RTN
 LD 0 2         ; @movePlayer
 CAR            ; player -> vitality
 LD 0 0
-LDF 202
+LDF 251
 AP 1           ; vector to move the player
 LD 0 2         ; the player himself
 CDR
 CAR            ; and his location
-LDF 178
+LDF 227
 AP 2           ; new position of player
 LD 0 0         ; new direction of player
 LD 0 2
@@ -139,6 +147,47 @@ CONS           ; pack the new player
 CONS
 CONS
 RTN
+LD 0 0         ; the map ; @checkCollectibles
+LD 0 1         ; player -> location
+CDR
+CAR
+LDF 287
+AP 2
+ST 0 3         ; save for future access
+LD 0 3
+LDC 2          ; is it pill?
+CEQ
+SEL 172 177
+LD 0 3
+LDC 3          ; is it power pill?
+CEQ
+SEL 178 183
+LD 0 3
+LDC 4          ; could it be the fruit?
+CEQ
+SEL 184 189
+LD 0 0
+LD 0 1
+LD 0 2
+RTN
+LD 0 1         ; player ; @ccPill
+LDC 10         ; 10 points for eating pill
+LDF 346
+AP 2
+ST 0 1         ; save the updated player
+JOIN           ; @ccNoPill
+LD 0 1         ; player ; @ccPowerPill
+LDC 50         ; t0 points for eating power pill
+LDF 346
+AP 2
+ST 0 1         ; save the updated player
+JOIN           ; @ccNoPowerpill
+LD 0 1         ; player ; @ccFruit
+LDC 10         ; 700 points for eating fruit
+LDF 346
+AP 2
+ST 0 1         ; save the updated player
+JOIN           ; @ccNoFruit
 LD 0 0         ; @evaluateWorld
 CDR            ; player
 CAR
@@ -203,7 +252,7 @@ RTN
 LD 0 0         ; @directionToVector
 LDC 0
 CEQ
-TSEL 206 210
+TSEL 255 259
 LDC 0          ; @dtvUp
 LDC -1
 CONS
@@ -211,7 +260,7 @@ RTN
 LD 0 0         ; @dtvNotUp
 LDC 1
 CEQ
-TSEL 214 218
+TSEL 263 267
 LDC 1          ; @dtvRight
 LDC 0
 CONS
@@ -219,7 +268,7 @@ RTN
 LD 0 0         ; @dtvNotRight
 LDC 2
 CEQ
-TSEL 222 226
+TSEL 271 275
 LDC 0          ; @dtvDown
 LDC 1
 CONS
@@ -236,16 +285,88 @@ DIV
 MUL
 SUB
 RTN
+LD 0 0         ; map ; @getMapCell
+LD 0 1         ; row
+CDR
+LDC 1
+ADD            ; because indexing has to start from 1
+LDF 301
+AP 2
+LD 0 1         ; column
+CAR
+LDC 1
+ADD            ; because indexing has to start from 1
+LDF 301
+AP 2
+RTN
 LD 0 0         ; @nth
 LD 0 1
 LDC 0
 CGT
-TSEL 245 243
+TSEL 308 306
 CAR            ; just return head ; @nthHead
 RTN
 CDR            ; take tail ; @nthTail
 LD 0 1         ; subtract one from position
 LDC 1
 SUB
-LDF 238
+LDF 301
 TAP 2          ; and call recursively
+LD 0 1         ; @updateNth
+LDC 0          ; is this the position we're looking for?
+CGT
+TSEL 323 318
+LD 0 2         ; new value ; @unHead
+LD 0 0         ; rest of the values
+CDR
+CONS
+RTN
+LD 0 0         ; preserve the head ; @unTail
+CAR
+LD 0 0         ; recursively compute the rest
+CDR
+LD 0 1
+LDC 1
+SUB
+LD 0 2
+LDF 314
+AP 3
+CONS           ; append the head to the rest
+RTN
+LD 0 0         ; list ; @addToNth
+LD 0 1         ; position
+LD 0 0         ; new value
+LD 0 1
+LDF 301
+AP 2
+LD 0 2
+ADD
+LDF 314
+AP 3
+RTN
+LD 0 0         ; @increasePlayerScore
+CAR
+LD 0 0
+CDR
+CAR
+LD 0 0
+CDR
+CDR
+CAR
+LD 0 0
+CDR
+CDR
+CDR
+CAR
+LD 0 0
+CDR
+CDR
+CDR
+CDR
+LD 0 1
+ADD
+CONS
+CONS
+CONS
+CONS
+RTN

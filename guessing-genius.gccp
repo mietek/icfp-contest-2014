@@ -9,13 +9,12 @@ RTN
 ; ------------------------------------------------------------------------------
 LDC 0          ; @stepFunction
 LDC 3          ; start checking moves starting with 3
-LDC 0          ; placeholder for best score
-LDC 0          ; placeholder for current score
-LDC 0          ; placholder for best move
+LDC -1          ; placeholder for best score
+LDC -1          ; placeholder for current score
+LDC -1         ; placeholder for best move
 LD 0 1         ; the world state
-DUM 5
 LDF @evaluateMoves
-RAP 5          ; get best move
+AP 5           ; get best move
 CONS           ; returning (state, direction)
 RTN
 
@@ -25,7 +24,7 @@ RTN
 ; returns: direction
 ; ------------------------------------------------------------------------------
 LD 0 0         ; current direction to check ; @evaluateMoves
-LDC 5          ; iterations count for evaluateMove
+LDC 20         ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
 LD 0 4         ; pass the current world state
 DUM 4
@@ -40,10 +39,10 @@ LD 0 0
 TSEL @checkNextMove @returnBestMove
 
 LD 0 0         ; load current direction ; @checkNextMove
-LDC -1
-ADD            ; and subtract 1 to have the next one
+LDC 1
+SUB            ; and subtract 1 to have the next one
 LD 0 1         ; best score so far
-LD 0 2         ; current score
+LDC 0          ; current score
 LD 0 3         ; best move
 LD 0 4         ; world
 LDF @evaluateMoves
@@ -63,6 +62,13 @@ JOIN           ; @gotWorseScore
 ; arguments: direction, iterations count, *cumulative score, world
 ; returns: cumulative score
 ; ------------------------------------------------------------------------------
+; debugging
+; LDC 10
+; LD 0 0
+; SUB
+; RTN
+; debug to here
+
 LD 0 1         ; iterations count ; @evaluateMove
 TSEL @doAnotherIteration @returnCumulativeScore
 LD 0 2         ; @returnCumulativeScore
@@ -72,7 +78,7 @@ LD 0 2         ; score so far ; @doAnotherIteration
 
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 5          ; iterations count for single simulation
+LDC 4          ; how many steps in single simulation
 LDF @runSimulation
 AP 3           ; get the resulting world
 
@@ -131,6 +137,8 @@ RTN            ; to be implemented
 ; arguments: direction, world, *map, *player, *ghosts, *fruit
 ; returns: new world
 ; ------------------------------------------------------------------------------
+; data structures unpacking
+; --
 LD 0 1         ; @simulateMove
 CAR            ; extract map
 ST 0 2         ; and store it in the frame
@@ -151,7 +159,9 @@ CDR
 CDR
 CDR
 ST 0 5
-
+; --
+; actual simulation
+; --
 LD 0 0         ; movePlayer(direction, map, player) -> player
 LD 0 2
 LD 0 3
@@ -159,8 +169,20 @@ LDF @movePlayer
 AP 3
 ST 0 3         ; store the new player
 
+LD 0 2         ; checkCollectibles(map, player, fruit, *cell)
+LD 0 3
+LD 0 5
+LDC 0
+LDF @checkCollectibles
+AP 4
+ST 0 5         ; store the new fruit
+ST 0 3         ; store the new player
+ST 0 2         ; store the new map
 
-LD 0 2         ; pack the new world again
+; --
+; packing new data structures
+; --
+LD 0 2
 LD 0 3
 LD 0 4
 LD 0 5
@@ -177,7 +199,9 @@ RTN
 LD 0 2         ; @movePlayer
 CAR            ; player -> vitality
 
-; ---- actual function
+; --
+; actual function
+; --
 LD 0 0
 LDF @directionToVector
 AP 1           ; vector to move the player
@@ -188,9 +212,10 @@ CAR            ; and his location
 
 LDF @addVectors
 AP 2           ; new position of player
-; ----
-; todo: check if possible at all
-; ----
+
+; ---
+; todo: check here if move possible at all
+; ---
 
 LD 0 0         ; new direction of player
 
@@ -204,6 +229,64 @@ CONS
 CONS
 
 RTN
+
+; ------------------------------------------------------------------------------
+; @checkCollectibles
+; arguments: map, player, fruit, *cell content
+; returns: new map, new player, new fruit
+; ------------------------------------------------------------------------------
+LD 0 0         ; the map ; @checkCollectibles
+
+LD 0 1         ; player -> location
+CDR
+CAR
+
+LDF @getMapCell
+AP 2
+ST 0 3         ; save for future access
+
+LD 0 3
+LDC 2          ; is it pill?
+CEQ
+SEL @ccPill @ccNoPill
+
+LD 0 3
+LDC 3          ; is it power pill?
+CEQ
+SEL @ccPowerPill @ccNoPowerpill
+
+LD 0 3
+LDC 4          ; could it be the fruit?
+CEQ
+SEL @ccFruit @ccNoFruit
+
+; return all the new data
+LD 0 0
+LD 0 1
+LD 0 2
+RTN
+
+LD 0 1         ; player ; @ccPill
+LDC 10         ; 10 points for eating pill
+LDF @increasePlayerScore
+AP 2
+ST 0 1         ; save the updated player
+JOIN           ; @ccNoPill
+
+LD 0 1         ; player ; @ccPowerPill
+LDC 50         ; t0 points for eating power pill
+LDF @increasePlayerScore
+AP 2
+ST 0 1         ; save the updated player
+JOIN           ; @ccNoPowerpill
+
+LD 0 1         ; player ; @ccFruit
+LDC 10         ; 700 points for eating fruit
+LDF @increasePlayerScore
+AP 2
+ST 0 1         ; save the updated player
+JOIN           ; @ccNoFruit
+
 ; ------------------------------------------------------------------------------
 ; @evaluateWorld
 ; arguments: world
@@ -338,6 +421,26 @@ MUL
 SUB
 RTN
 ; ------------------------------------------------------------------------------
+; @getMapCell
+; arguments: map, coordinates
+; returns: contents of the given cell
+; ------------------------------------------------------------------------------
+LD 0 0         ; map ; @getMapCell
+LD 0 1         ; row
+CDR
+LDC 1
+ADD            ; because indexing has to start from 1
+LDF @nth
+AP 2
+
+LD 0 1         ; column
+CAR
+LDC 1
+ADD            ; because indexing has to start from 1
+LDF @nth
+AP 2
+RTN
+; ------------------------------------------------------------------------------
 ; @nth
 ; arguments: list, position
 ; returns: nth element from list
@@ -355,4 +458,87 @@ LDC 1
 SUB
 LDF @nth
 TAP 2          ; and call recursively
+; ------------------------------------------------------------------------------
+; @updateNth
+; arguments: list, position, new value
+; returns: updated list
+; ------------------------------------------------------------------------------
+LD 0 1         ; @updateNth
+LDC 0          ; is this the position we're looking for?
+CGT
+TSEL @unTail @unHead
+LD 0 2         ; new value ; @unHead
+LD 0 0         ; rest of the values
+CDR
+CONS
+RTN
+
+LD 0 0         ; preserve the head ; @unTail
+CAR
+
+LD 0 0         ; recursively compute the rest
+CDR
+LD 0 1
+LDC 1
+SUB
+LD 0 2
+LDF @updateNth
+AP 3
+CONS           ; append the head to the rest
+RTN
+; ------------------------------------------------------------------------------
+; @addToNth
+; arguments: list, position, increment
+; returns: updated list
+; ------------------------------------------------------------------------------
+LD 0 0         ; list ; @addToNth
+LD 0 1         ; position
+
+LD 0 0         ; new value
+LD 0 1
+LDF @nth
+AP 2
+
+LD 0 2
+ADD
+
+LDF @updateNth
+AP 3
+RTN
+; ------------------------------------------------------------------------------
+; @increasePlayerScore
+; arguments: player, points
+; returns: updated player
+; ------------------------------------------------------------------------------
+LD 0 0         ; @increasePlayerScore
+CAR
+
+LD 0 0
+CDR
+CAR
+
+LD 0 0
+CDR
+CDR
+CAR
+
+LD 0 0
+CDR
+CDR
+CDR
+CAR
+
+LD 0 0
+CDR
+CDR
+CDR
+CDR
+LD 0 1
+ADD
+
+CONS
+CONS
+CONS
+CONS
+RTN
 ; ------------------------------------------------------------------------------
