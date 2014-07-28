@@ -24,7 +24,7 @@ RTN
 ; returns: direction
 ; ------------------------------------------------------------------------------
 LD 0 0         ; current direction to check ; @evaluateMoves
-LDC 20         ; iterations count for evaluateMove
+LDC 1         ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
 LD 0 4         ; pass the current world state
 DUM 4
@@ -62,12 +62,6 @@ JOIN           ; @gotWorseScore
 ; arguments: direction, iterations count, *cumulative score, world
 ; returns: cumulative score
 ; ------------------------------------------------------------------------------
-; debugging
-; LDC 10
-; LD 0 0
-; SUB
-; RTN
-; debug to here
 
 LD 0 1         ; iterations count ; @evaluateMove
 TSEL @doAnotherIteration @returnCumulativeScore
@@ -78,7 +72,7 @@ LD 0 2         ; score so far ; @doAnotherIteration
 
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 4          ; how many steps in single simulation
+LDC 1          ; how many steps in single simulation
 LDF @runSimulation
 AP 3           ; get the resulting world
 
@@ -110,7 +104,7 @@ LDC 0
 LDF @simulateMove
 AP 6           ; returns new world state
 ST 0 1         ; store it for later
-LD 0 2         ; @runSimulation
+LD 0 2
 TSEL @doAnotherSimulationIteration @returnFinalWorld
 LD 0 1         ; @returnFinalWorld
 RTN
@@ -428,15 +422,11 @@ RTN
 LD 0 0         ; map ; @getMapCell
 LD 0 1         ; row
 CDR
-LDC 1
-ADD            ; because indexing has to start from 1
 LDF @nth
 AP 2
 
 LD 0 1         ; column
 CAR
-LDC 1
-ADD            ; because indexing has to start from 1
 LDF @nth
 AP 2
 RTN

@@ -13,7 +13,7 @@ AP 5           ; get best move
 CONS           ; returning (state, direction)
 RTN
 LD 0 0         ; current direction to check ; @evaluateMoves
-LDC 20         ; iterations count for evaluateMove
+LDC 1         ; iterations count for evaluateMove
 LDC 0          ; accumulator for cumulative score of iterations
 LD 0 4         ; pass the current world state
 DUM 4
@@ -49,8 +49,8 @@ RTN
 LD 0 2         ; score so far ; @doAnotherIteration
 LD 0 0         ; direction
 LD 0 3         ; world
-LDC 4          ; how many steps in single simulation
-LDF 75
+LDC 1          ; how many steps in single simulation
+LDF 66
 AP 3           ; get the resulting world
 LDF 190
 AP 1           ; get the new score
@@ -73,7 +73,7 @@ LDC 0
 LDF 90
 AP 6           ; returns new world state
 ST 0 1         ; store it for later
-LD 0 2         ; @runSimulation
+LD 0 2
 TSEL 79 77
 LD 0 1         ; @returnFinalWorld
 RTN
@@ -84,7 +84,7 @@ LD 0 1         ; current world state
 LD 0 2         ; iterations count
 LDC -1         ; decreased by 1
 ADD
-LDF 75
+LDF 66
 TAP 3
 LD 0 0         ; @generateNextRandomDirection
 RTN            ; to be implemented
@@ -172,19 +172,19 @@ LD 0 2
 RTN
 LD 0 1         ; player ; @ccPill
 LDC 10         ; 10 points for eating pill
-LDF 346
+LDF 342
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoPill
 LD 0 1         ; player ; @ccPowerPill
 LDC 50         ; t0 points for eating power pill
-LDF 346
+LDF 342
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoPowerpill
 LD 0 1         ; player ; @ccFruit
 LDC 10         ; 700 points for eating fruit
-LDF 346
+LDF 342
 AP 2
 ST 0 1         ; save the updated player
 JOIN           ; @ccNoFruit
@@ -288,34 +288,30 @@ RTN
 LD 0 0         ; map ; @getMapCell
 LD 0 1         ; row
 CDR
-LDC 1
-ADD            ; because indexing has to start from 1
-LDF 301
+LDF 297
 AP 2
 LD 0 1         ; column
 CAR
-LDC 1
-ADD            ; because indexing has to start from 1
-LDF 301
+LDF 297
 AP 2
 RTN
 LD 0 0         ; @nth
 LD 0 1
 LDC 0
 CGT
-TSEL 308 306
+TSEL 304 302
 CAR            ; just return head ; @nthHead
 RTN
 CDR            ; take tail ; @nthTail
 LD 0 1         ; subtract one from position
 LDC 1
 SUB
-LDF 301
+LDF 297
 TAP 2          ; and call recursively
 LD 0 1         ; @updateNth
 LDC 0          ; is this the position we're looking for?
 CGT
-TSEL 323 318
+TSEL 319 314
 LD 0 2         ; new value ; @unHead
 LD 0 0         ; rest of the values
 CDR
@@ -329,7 +325,7 @@ LD 0 1
 LDC 1
 SUB
 LD 0 2
-LDF 314
+LDF 310
 AP 3
 CONS           ; append the head to the rest
 RTN
@@ -337,11 +333,11 @@ LD 0 0         ; list ; @addToNth
 LD 0 1         ; position
 LD 0 0         ; new value
 LD 0 1
-LDF 301
+LDF 297
 AP 2
 LD 0 2
 ADD
-LDF 314
+LDF 310
 AP 3
 RTN
 LD 0 0         ; @increasePlayerScore
